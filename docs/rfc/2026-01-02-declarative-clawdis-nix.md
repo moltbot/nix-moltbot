@@ -6,16 +6,16 @@
 
 ## 1) Narrative: what we are building and why
 
-Clawdis is powerful but hard to install and configure for new users, especially those who do not want to learn Nix internals. We need a batteries‑included, obvious, and safe path to get a working Clawdis instance with minimal friction. This RFC proposes a dedicated public repo, `nix-clawdis`, that packages Clawdis for Nix and provides a declarative, user‑friendly configuration layer with strong defaults, clear guardrails, and an **agent‑first onboarding flow**.
+Clawdis is powerful but hard to install and configure for new users, especially those who do not want to learn Nix internals. We need a batteries‑included, obvious, and safe path to get a working Clawdis instance with minimal friction. This RFC proposes a dedicated public repo, `nix-clawdis`, that packages Clawdis for Nix and provides a declarative, user‑friendly configuration layer with strong defaults and an agent‑first onboarding flow.
 
-The goal is a **fully declarative bootstrap**: a user can provide a small set of inputs (token path + allowlist), and an agent performs all configuration steps via Nix, with no ad‑hoc snippets or manual tweaking.
+The goal is a **fully declarative bootstrap**: users provide a small set of inputs (token path + allowlist), and the setup is deterministic and repeatable.
 
 ## 1.1) Non‑negotiables
 
 - Nix‑first installation: no global installs, no manual brew steps required for core functionality.
 - Safe defaults: providers disabled unless explicitly enabled and configured.
 - No secrets committed to the repo; explicit guidance for secrets wiring (agenix‑style).
-- **Agent‑first docs**: no random snippets; a single prompt + deterministic steps.
+- Agent‑first docs: one path, deterministic steps, no guesswork.
 - Deterministic builds and reproducible outputs.
 - Documentation must be suitable for publication on the internet.
 
@@ -33,10 +33,10 @@ This RFC is explicitly **not** about:
 
 Goals:
 - Provide a Nix package for Clawdis and a Home Manager module with batteries‑included defaults.
-- Provide a flake app for the gateway CLI and a clear verification path.
+- Provide a macOS app bundle package aligned to the gateway version.
 - Make configuration technically light with explicit options and guardrails.
 - Telegram‑first configuration and defaults.
-- Provide a single **agent‑first onboarding flow** that is end‑to‑end declarative.
+- Provide a single agent‑first onboarding flow that is end‑to‑end declarative.
 - New user can get a working bot in 10 minutes without understanding Nix internals.
 
 Non‑goals:
@@ -50,86 +50,89 @@ Non‑goals:
 ## 3) System overview
 
 `nix-clawdis` is a public repo that provides (macOS‑only in v1, no CI in v1):
-- A Nix package derivation for Clawdis.
+- A Nix package derivation for the Clawdis gateway.
+- A Nix package for the macOS app bundle (DMG).
 - A Home Manager module for user‑level config and service wiring.
 - A nix‑darwin module for macOS users (optional, thin wrapper over HM).
-- A flake with devShell and a gateway app.
+- A flake with a batteries‑included default package.
 - Agent‑first documentation and a declarative bootstrap flow.
 
 ## 4) Components and responsibilities
 
-- **Package derivation**: builds Clawdis from a pinned source (tag or rev) and exposes a binary.
+- **Package derivation**: builds Clawdis gateway from a pinned source.
+- **App bundle**: installs Clawdis.app from a pinned DMG matching the gateway version.
 - **Home Manager module**: declarative config, writes `~/.clawdis/clawdis.json`, manages services.
 - **Flake outputs**:
-  - `packages.<system>.clawdis-gateway` (binary)
-  - `apps.<system>.clawdis` (gateway CLI)
-  - `devShells.<system>.default` (docs + lint + tests)
+  - `packages.<system>.clawdis` (default batteries‑included bundle)
+  - `packages.<system>.clawdis-gateway`
+  - `packages.<system>.clawdis-app`
+  - `packages.<system>.clawdis-tools-base`
+  - `packages.<system>.clawdis-tools-extended`
   - `homeManagerModules.clawdis`
   - `darwinModules.clawdis` (if needed)
-- **Docs**: single agent‑first onboarding flow + operator reference.
 
 ## 5) Configuration model (public contract)
 
-The Home Manager module is the public contract. It must expose a small, explicit option set (enable, token path, allowlist, queue mode) and render a deterministic `~/.clawdis/clawdis.json`.
+The Home Manager module is the public contract. It must expose a small, explicit option set (enable, token path, allowlist) and render a deterministic `~/.clawdis/clawdis.json`.
 
-The design constraint: **users should not have to write arbitrary JSON**. The module should remain the only supported configuration surface for v1.
+The design constraint: users should not have to write arbitrary JSON. The module is the supported configuration surface for v1.
 
-## 6) Agent‑first onboarding flow (no snippets)
+## 6) Agent‑first onboarding flow (single source of truth)
 
-The onboarding experience must be a **single prompt** that an agent can execute end‑to‑end, producing a working Clawdis instance. The flow includes:
-
-- Install Determinate Nix if missing.
-- Enable flakes.
-- Create a minimal local flake (in a neutral user directory, not a personal config repo).
-- Add `nix-clawdis` input and HM module.
-- Wire secrets declaratively (token file path + allowlist).
-- Run a build and verify the service is running.
-
-The docs must provide a **single prompt** and a **deterministic checklist**, not a pile of unrelated snippets.
+The README is the only supported onboarding path. It must include:
+- Human vs agent split
+- Minimal config snippet
+- Deterministic steps and stop conditions
+- Verification steps and expected success signals
 
 ## 7) Secrets handling (opinionated default)
 
 - Recommend agenix for bot tokens on macOS.
 - Default docs refer to a token file path under `/run/agenix/`.
-- Provide a minimal, agent‑friendly explanation of how to create and reference the secret file.
 
-## 8) Verification and smoke test
+## 8) Backing tools (batteries‑included)
 
-Verification must be explicit and minimal:
-- launchd service name is `com.nix-clawdis.gateway`.
-- log path is `~/.clawdis/logs/clawdis-gateway.log`.
-- smoke test is a **real Telegram message** in an allowlisted chat and a reply from the bot.
+- Base and extended toolchains are installed via Nix by default.
+- Tools correspond to upstream Clawdis skill installers (brew/go/node/uv) mapped into nixpkgs where possible.
 
-## 9) Determinism and validation
+## 9) Compatibility guarantees
 
-- Pin Clawdis source to a known revision or release tag.
-- Nix assertions validate required tokens and allowlists.
-- Providers must not start unless explicitly enabled and configured.
-- Strict allowlists for inbound chat IDs.
-- Emit clear, actionable errors when config is invalid.
+- Gateway and macOS app versions are pinned to the same release tag.
+- Launchd label and log paths are aligned with the macOS app defaults.
+- App is forced into attach‑only mode to prevent it from spawning its own gateway.
 
-## 10) Deliverables (docs)
+## 10) Prod vs dev split (planned)
 
-We will rebuild docs to be **agent‑first**:
-- A single “Agent‑First Guide” (copy‑paste prompt + checklist).
-- A minimal operator reference (options, defaults, verification steps).
+We will maintain two distinct setups:
 
-No other docs until those two are excellent.
+- **Prod (stable)**
+  - Uses `nix-clawdis` batteries‑included package.
+  - Pinned to released tags.
+  - No source builds.
+  - Launchd managed by Nix.
+  - App attaches to Nix gateway only.
+
+- **Dev (experimental)**
+  - Uses local source checkout (macOS app + gateway).
+  - Separate launchd label and state/log paths to avoid collisions.
+  - Free to change versions, flags, and test features.
+
+No changes to personal `nixos-config` are made in this repo; this is a plan only.
 
 ## 11) Definition of Done (DoD)
 
 This RFC is complete when:
 - The repo is public with a clear README and agent‑first guide.
 - Telegram‑first quickstart works on macOS with a real bot token.
-- `nix run .#clawdis` launches the gateway and responds in an allowlisted chat.
-- Documentation includes a single copy‑paste agent prompt and explicit verification steps.
+- `nix run .#clawdis` installs gateway + app + tools.
+- Launchd uses `com.steipete.clawdis.gateway` and logs to `/tmp/clawdis/clawdis-gateway.log`.
+- App runs in attach‑only mode (does not spawn its own gateway).
 - Smoke test: user sends a Telegram message in an allowlisted chat and receives a response.
-- Secrets flow documented with agenix‑style token file wiring.
-- A release tag is published and referenced in the agent‑first guide.
 
 ## 12) Implementation status (current)
 
-- Repo reset in progress to eliminate doc/code confusion.
-- `nix/` is retained for audit and will be refit to the agent‑first model.
-- Next milestone is rebuilding docs to match this RFC.
+- Gateway pinned to `v2.0.0-beta4`.
+- App DMG pinned to `v2.0.0-beta4`.
+- Batteries‑included package output is wired in the flake.
+- README is the single onboarding source.
 

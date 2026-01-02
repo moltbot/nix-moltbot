@@ -22,7 +22,11 @@
       {
         packages = {
           clawdis-gateway = pkgs.clawdis-gateway;
-          default = pkgs.clawdis-gateway;
+          clawdis-app = pkgs.clawdis-app;
+          clawdis = pkgs.clawdis;
+          clawdis-tools-base = pkgs.clawdis-tools-base;
+          clawdis-tools-extended = pkgs.clawdis-tools-extended;
+          default = pkgs.clawdis;
         };
 
         apps = {

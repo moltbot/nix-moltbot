@@ -36,16 +36,35 @@ let
 
   configJson = builtins.toJSON mergedConfig;
 
-  logPath = "${stateDir}/logs/clawdis-gateway.log";
+  logPath = "/tmp/clawdis/clawdis-gateway.log";
+
+  gatewayWrapper = pkgs.writeShellScriptBin "clawdis-gateway" ''
+    set -euo pipefail
+
+    if [ -n "${cfg.providers.anthropic.apiKeyFile}" ]; then
+      if [ ! -f "${cfg.providers.anthropic.apiKeyFile}" ]; then
+        echo "Anthropic API key file not found: ${cfg.providers.anthropic.apiKeyFile}" >&2
+        exit 1
+      fi
+      ANTHROPIC_API_KEY="$(cat "${cfg.providers.anthropic.apiKeyFile}")"
+      if [ -z "$ANTHROPIC_API_KEY" ]; then
+        echo "Anthropic API key file is empty: ${cfg.providers.anthropic.apiKeyFile}" >&2
+        exit 1
+      fi
+      export ANTHROPIC_API_KEY
+    fi
+
+    exec "${cfg.package}/bin/clawdis" "$@"
+  '';
 
 in {
   options.programs.clawdis = {
-    enable = lib.mkEnableOption "Clawdis (Telegram-first gateway)";
+    enable = lib.mkEnableOption "Clawdis (batteries-included)";
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.clawdis-gateway;
-      description = "Clawdis gateway package.";
+      default = pkgs.clawdis;
+      description = "Clawdis batteries-included package.";
     };
 
     stateDir = lib.mkOption {
@@ -83,6 +102,14 @@ in {
         type = lib.types.bool;
         default = false;
         description = "Require @mention in Telegram groups.";
+      };
+    };
+
+    providers.anthropic = {
+      apiKeyFile = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        description = "Path to Anthropic API key file (used to set ANTHROPIC_API_KEY).";
       };
     };
 
@@ -131,17 +158,29 @@ in {
 
     home.packages = [ cfg.package ];
 
+    home.file."Applications/Clawdis.app" = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+      source = "${cfg.package}/Applications/Clawdis.app";
+      recursive = true;
+    };
+
     home.file.".clawdis/clawdis.json".text = configJson;
 
     home.activation.clawdisDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      /bin/mkdir -p "${stateDir}/logs" "${workspaceDir}"
+      /bin/mkdir -p "${stateDir}" "${workspaceDir}" "/tmp/clawdis"
     '';
+
+    home.activation.clawdisAppDefaults = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        /usr/bin/defaults write com.steipete.clawdis clawdis.gateway.attachExistingOnly -bool true
+        /usr/bin/defaults write com.steipete.clawdis gatewayPort -int 18789
+      ''
+    );
 
     launchd.agents."clawdis.gateway" = lib.mkIf cfg.launchd.enable {
       enable = true;
       config = {
-        Label = "com.nix-clawdis.gateway";
-        ProgramArguments = [ "${cfg.package}/bin/clawdis" ];
+        Label = "com.steipete.clawdis.gateway";
+        ProgramArguments = [ "${gatewayWrapper}/bin/clawdis-gateway" ];
         RunAtLoad = true;
         KeepAlive = true;
         WorkingDirectory = stateDir;

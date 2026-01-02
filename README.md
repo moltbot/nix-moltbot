@@ -1,89 +1,175 @@
 # nix-clawdis
 
-Declarative Clawdis for macOS via Nix, designed to be **agent‑first**.
+> Declarative Clawdis. Bulletproof by default.
+>
+> <sub>[skip to agent copypasta](#give-this-to-your-ai-agent)</sub>
 
-## Scope boundaries
+## The Magic
 
-- This repo is a **public, generic** Nix package + Home Manager module for Clawdis.
-- It does **not** include or depend on any personal `nixos-config` or private machine setup.
+- **One flake, everything works.** Gateway, macOS app, whisper, spotify, camera tools - all wired up and pinned.
 
-## Agent‑first onboarding (the only supported path)
+- **Agent-first.** Give the copypasta to Claude. It sets you up. You don't read docs, you just talk to your bot.
 
-This README is the **single source of truth**. Do not look for other docs.
+- **Bulletproof.** Nix locks every dependency. No version drift, no surprises. `home-manager switch` to update, `home-manager generations` to rollback instantly.
 
-### Human‑in‑the‑loop (you must do these)
+## Why this exists
 
-1) Create a Telegram bot token and save it to a file on disk.
-   - Recommended path: `/run/agenix/telegram-bot-token`
-   - If you do not use agenix, any readable file path works.
-2) Send a Telegram message to your bot from the chat(s) you want to allow.
-   - This is required so chat IDs appear in Telegram’s updates feed.
-3) Provide these inputs to the agent (no guesswork):
-   - macOS version
-   - CPU architecture: `arm64` or `x86_64`
-   - Home Manager configuration name (e.g. `myuser`)
-   - Telegram bot token file path
-   - Telegram allowFrom chat IDs (list of ints)
+Clawdis is the right product. An AI assistant that lives in Telegram, controls your Mac, and actually does things.
 
-Do not proceed unless all inputs above are provided.
+This repo wraps it in Nix: a pinned, reproducible package that installs the gateway, the macOS app, and all the tools declaratively. Every dependency locked. Every update intentional. Rollback in seconds.
 
-### Agent‑only steps (no human intervention)
+## What it does
 
-1) Check if Determinate Nix is installed. If not, install it.
-   - If `nix --version` fails, run:
-     `curl -fsSL https://install.determinate.systems/nix | sh -s -- install`
-2) Enable flakes in `~/.config/nix/nix.conf`.
-   - Ensure the directory exists: `mkdir -p ~/.config/nix`
-   - Ensure this line exists: `experimental-features = nix-command flakes`
-3) Create a fresh local flake at `~/code/clawdis-local`.
-4) Copy the template file from this repo:
-   - Source: `templates/agent-first/flake.nix`
-   - Target: `~/code/clawdis-local/flake.nix`
-   - Command: `cp templates/agent-first/flake.nix ~/code/clawdis-local/flake.nix`
-5) Replace placeholders in `~/code/clawdis-local/flake.nix`:
-   - `<system>` = `aarch64-darwin` for arm64, `x86_64-darwin` for Intel
-   - `<user>` = Home Manager configuration name
-   - `<tokenPath>` = Telegram bot token file path
-   - `<allowFrom>` = space‑separated list of ints
-   - Do not leave any placeholders in the file.
-   - After editing, re-open the file and verify there are no `<...>` strings left.
-6) Validate the token file exists and is non‑empty before proceeding.
-   - If the file does not exist or is empty, stop and ask the human to fix it.
-7) If the human did not supply chat IDs, run the helper:
-   - File: `templates/agent-first/get-telegram-chat-ids.py`
-   - Command: `python3 templates/agent-first/get-telegram-chat-ids.py <tokenPath>`
-   - Ask the human to pick which chat IDs to allow.
-   - If the helper returns no chat IDs, stop and ask the human to send a message, then re‑run the helper.
-   - If `python3` is missing, ask the human to install Xcode Command Line Tools.
-8) Run Home Manager:
-   - If not installed: `nix run home-manager/release-24.11 -- init`
-     - If this command fails, stop and ask the human for approval to proceed.
-   - Then: `home-manager switch --flake .#<user>`
-9) Verify:
-   - `launchctl print gui/$UID/com.nix-clawdis.gateway | grep state`
-   - `tail -n 50 ~/.clawdis/logs/clawdis-gateway.log`
-10) Ask the human to send a test message and confirm a reply.
+```
+Me: "what's on my screen?"
+Bot: *takes screenshot, describes it*
 
-### Expected success signals
+Me: "play some jazz"
+Bot: *opens Spotify, plays jazz*
 
-- `launchctl print` shows `state = running`.
-- Log file contains no fatal errors on startup.
-- Bot replies to a message in an allowlisted chat.
+Me: "transcribe this voice note"
+Bot: *runs whisper, sends you text*
+```
 
-### Deterministic checklist (agent self‑test)
+You talk to Telegram, your Mac does things.
 
-The agent’s work is correct **only if** all checks pass:
+## Give this to your AI agent
 
-- A new local flake exists at `~/code/clawdis-local`.
-- That flake references `github:joshp123/nix-clawdis` as an input.
-- Home Manager config enables `programs.clawdis` with Telegram enabled.
-- Token is referenced by a file path (no inline secrets).
-- `launchctl print gui/$UID/com.nix-clawdis.gateway | grep state` shows `state = running`.
-- `~/.clawdis/logs/clawdis-gateway.log` shows startup without fatal errors.
-- A real Telegram message in an allowlisted chat receives a bot response.
+Copy this entire block and paste it to Claude, Cursor, or whatever you use:
 
-If any item fails, the setup is incomplete.
+```text
+I want to set up nix-clawdis on my Mac.
 
-## Status
+Repository: github:joshp123/nix-clawdis
 
-The RFC lives at `docs/rfc/2026-01-02-declarative-clawdis-nix.md` and defines success criteria.
+What nix-clawdis is:
+- Batteries-included Nix package for Clawdis (AI assistant gateway)
+- Installs gateway + macOS app + tools (whisper, spotify, cameras, etc)
+- Runs as a launchd service, survives reboots
+
+What I need you to do:
+1. Check if Determinate Nix is installed (if not, install it)
+2. Create a local flake at ~/code/clawdis-local using templates/agent-first/flake.nix
+3. Help me create a Telegram bot (@BotFather) and get my chat ID (@userinfobot)
+4. Set up secrets (bot token, Anthropic key) - plain files at ~/.secrets/ is fine
+5. Fill in the template placeholders and run home-manager switch
+6. Verify: launchd running, bot responds to messages
+
+My setup:
+- macOS version: [FILL IN]
+- CPU: [arm64 / x86_64]
+- Home Manager config name: [FILL IN or "I don't have Home Manager yet"]
+
+Reference the README and templates/agent-first/flake.nix in the repo for the module options.
+```
+
+## Minimal config
+
+```nix
+{
+  programs.clawdis = {
+    enable = true;
+    providers.telegram = {
+      enable = true;
+      botTokenFile = "/path/to/telegram-bot-token";
+      allowFrom = [ 12345678 ];  # your Telegram user ID
+    };
+    providers.anthropic = {
+      apiKeyFile = "/path/to/anthropic-api-key";
+    };
+  };
+}
+```
+
+Then: `home-manager switch --flake .#youruser`
+
+## What you get
+
+- Launchd keeps the gateway alive (`com.steipete.clawdis.gateway`)
+- Logs at `/tmp/clawdis/clawdis-gateway.log`
+- Message your bot in Telegram, get a response
+- All the tools: whisper, spotify_player, camsnap, peekaboo, and more
+
+## What we manage vs what you manage
+
+| Component | Nix manages | You manage |
+| --- | --- | --- |
+| Gateway binary | ✓ | |
+| macOS app | ✓ | |
+| Launchd service | ✓ | |
+| Tools (whisper, etc) | ✓ | |
+| Telegram bot token | | ✓ |
+| Anthropic API key | | ✓ |
+| Chat IDs | | ✓ |
+
+## Module options
+
+```nix
+programs.clawdis = {
+  enable = true;
+  package = pkgs.clawdis;  # or clawdis-gateway for minimal
+  stateDir = "~/.clawdis";
+  workspaceDir = "~/.clawdis/workspace";
+
+  providers.telegram = {
+    enable = true;
+    botTokenFile = "/path/to/token";
+    allowFrom = [ 12345678 -1001234567890 ];  # user IDs and group IDs
+    requireMention = false;  # require @mention in groups
+  };
+
+  providers.anthropic = {
+    apiKeyFile = "/path/to/key";
+  };
+
+  routing.queue.mode = "interrupt";  # or "queue"
+  routing.groupChat.requireMention = false;
+
+  launchd.enable = true;
+};
+```
+
+## Packages
+
+| Package | Contents |
+| --- | --- |
+| `clawdis` (default) | Gateway + app + full toolchain |
+| `clawdis-gateway` | Gateway CLI only |
+| `clawdis-app` | macOS app only |
+
+## Included tools
+
+**Core**: nodejs, pnpm, git, curl, jq, python3, ffmpeg, ripgrep
+
+**AI/ML**: openai-whisper, sag (TTS)
+
+**Media**: spotify-player, sox, camsnap
+
+**macOS**: peekaboo, imsg, blucli
+
+**Integrations**: gogcli, wacli, bird, mcporter
+
+## Commands
+
+```bash
+# Check service
+launchctl print gui/$UID/com.steipete.clawdis.gateway | grep state
+
+# View logs
+tail -50 /tmp/clawdis/clawdis-gateway.log
+
+# Restart
+launchctl kickstart -k gui/$UID/com.steipete.clawdis.gateway
+
+# Rollback
+home-manager generations  # list
+home-manager switch --rollback  # revert
+```
+
+## Upstream
+
+Wraps [Clawdis](https://github.com/steipete/clawdis) by Peter Steinberger.
+
+## License
+
+MIT
