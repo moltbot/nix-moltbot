@@ -8,23 +8,23 @@
 , makeWrapper
 , vips
 , sourceInfo
-, src ? null
+, src_ ? null
 , pnpmDepsHash ? null
 }:
 
-assert src == null || pnpmDepsHash != null;
+assert src_ == null || pnpmDepsHash != null;
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "clawdis-gateway";
   version = "2.0.0-beta4";
 
-  src = if src != null then src else fetchFromGitHub sourceInfo;
+  src = if src_ != null then src_ else fetchFromGitHub sourceInfo;
 
   pnpmDeps = pnpm_10.fetchDeps {
     inherit (finalAttrs) pname version src;
     hash = if pnpmDepsHash != null
       then pnpmDepsHash
-      else "sha256-k5VvvHOlZc24M0aQF4nEux2k19s/XMD56lprlUD/XoI=";
+      else "sha256-oGXUm+oftkasXsK+QGlxe0xO7riWHdzpV0oK27lZrLw=";
     fetcherVersion = 2;
   };
 
