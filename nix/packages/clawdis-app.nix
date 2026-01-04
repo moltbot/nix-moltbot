@@ -18,7 +18,7 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p $out/Applications
-    app_path="$(find "$src" -maxdepth 2 -name 'Clawdis.app' -print -quit)"
+    app_path="$(find "$src" -maxdepth 2 -path "$src/__MACOSX" -prune -o -name 'Clawdis.app' -print -quit)"
     if [ -z "$app_path" ]; then
       echo "Clawdis.app not found in $src" >&2
       exit 1
