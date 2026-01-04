@@ -324,7 +324,7 @@ let
                 {
                   name = "${base}/${skill.name}";
                   value = {
-                    source = lib.file.mkOutOfStoreSymlink source;
+                    source = config.lib.file.mkOutOfStoreSymlink source;
                     recursive = true;
                   };
                 };
