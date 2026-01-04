@@ -131,8 +131,7 @@ This RFC is complete when:
 
 ## 12) Implementation status (current)
 
-- Gateway pinned to `v2.0.0-beta4`.
-- App DMG pinned to `v2.0.0-beta4`.
+- Gateway pinned to `v2.0.0-beta5`.
+- App DMG pinned to `v2.0.0-beta5`.
 - Batteries‑included package output is wired in the flake.
 - README is the single onboarding source.
-

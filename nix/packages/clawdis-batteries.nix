@@ -6,7 +6,7 @@
 }:
 
 buildEnv {
-  name = "clawdis-2.0.0-beta4";
+  name = "clawdis-2.0.0-beta5";
   paths = [ clawdis-gateway clawdis-app ] ++ extendedTools;
   pathsToLink = [ "/bin" "/Applications" ];
 

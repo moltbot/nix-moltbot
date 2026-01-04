@@ -430,7 +430,7 @@ let
         plugins = resolvedPluginsByInstance.${instName} or [];
         envFor = p: (p.config.env or {});
         missingFor = p:
-          lib.filter (req: !(envFor p ? req)) p.needs.requiredEnv;
+          lib.filter (req: !(builtins.hasAttr req (envFor p))) p.needs.requiredEnv;
         configMissingStateDir = p:
           (p.config.settings or {}) != {} && (p.needs.stateDirs or []) == [];
         mkAssertion = p:
@@ -569,11 +569,16 @@ let
         export ANTHROPIC_API_KEY
       fi
 
+      if [ "$#" -eq 0 ]; then
+        exec "${gatewayPackage}/bin/clawdis" gateway-daemon
+      fi
       exec "${gatewayPackage}/bin/clawdis" "$@"
     '';
   in {
+    configJson = configJson;
+    configPath = inst.configPath;
     homeFile = {
-      name = inst.configPath;
+      name = toRelative inst.configPath;
       value = { text = configJson; };
     };
 
@@ -626,6 +631,11 @@ let
   };
 
   instanceConfigs = lib.mapAttrsToList mkInstanceConfig enabledInstances;
+  configWrites = lib.concatStringsSep "\n" (map (item: ''
+    cat <<'CLAWDIS_CONFIG' > ${lib.escapeShellArg item.configPath}
+${item.configJson}
+CLAWDIS_CONFIG
+  '') instanceConfigs);
   appInstalls = lib.filter (item: item != null) (map (item: item.appInstall) instanceConfigs);
 
   appDefaults = lib.foldl' (acc: item: lib.recursiveUpdate acc item.appDefaults) {} instanceConfigs;
@@ -848,6 +858,11 @@ in {
     home.activation.clawdisDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       /bin/mkdir -p ${lib.concatStringsSep " " (lib.concatMap (item: item.dirs) instanceConfigs)}
       ${lib.optionalString (pluginStateDirsAll != []) "/bin/mkdir -p ${lib.concatStringsSep " " pluginStateDirsAll}"}
+    '';
+
+    home.activation.clawdisConfig = lib.hm.dag.entryAfter [ "clawdisDirs" ] ''
+      set -euo pipefail
+      ${configWrites}
     '';
 
     home.activation.clawdisPluginGuard = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

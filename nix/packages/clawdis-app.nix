@@ -5,11 +5,11 @@
 
 stdenvNoCC.mkDerivation {
   pname = "clawdis-app";
-  version = "2.0.0-beta4";
+  version = "2.0.0-beta5";
 
   src = fetchzip {
-    url = "https://github.com/steipete/clawdis/releases/download/v2.0.0-beta4/Clawdis-2.0.0-beta4.zip";
-    hash = "sha256-Oa7cejVFfZtJBSmjDaRjqocVyXo+WeS/xucGpJFDzIg=";
+    url = "https://github.com/steipete/clawdis/releases/download/v2.0.0-beta5/Clawdis-2.0.0-beta5.zip";
+    hash = "sha256-AA4REVpADWO5guUdrF5rsVTY4RhzV6cLv6hbcnS6W9M=";
     stripRoot = false;
   };
 
@@ -18,7 +18,7 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p $out/Applications
-    app_path="$(find "$src" -maxdepth 2 -name 'Clawdis.app' -print -quit)"
+    app_path="$(find "$src" -maxdepth 2 -path "$src/__MACOSX" -prune -o -name 'Clawdis.app' -print -quit)"
     if [ -z "$app_path" ]; then
       echo "Clawdis.app not found in $src" >&2
       exit 1
