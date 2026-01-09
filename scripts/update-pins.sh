@@ -45,6 +45,8 @@ log "Source hash: $source_hash"
 
 perl -0pi -e "s|rev = \"[^\"]+\";|rev = \"${latest_sha}\";|" "$source_file"
 perl -0pi -e "s|hash = \"[^\"]+\";|hash = \"${source_hash}\";|" "$source_file"
+# Force a fresh pnpmDepsHash recalculation for the new source rev.
+perl -0pi -e "s|pnpmDepsHash = \"[^\"]*\";|pnpmDepsHash = \"\";|" "$source_file"
 
 log "Fetching latest release metadata"
 release_json=$(gh api /repos/clawdbot/clawdbot/releases?per_page=20 || true)
@@ -100,7 +102,7 @@ if ! nix build .#clawdbot-gateway --accept-flake-config >"$build_log" 2>&1; then
     exit 1
   fi
   log "pnpmDepsHash mismatch detected: $pnpm_hash"
-  perl -0pi -e "s|pnpmDepsHash = \"[^\"]+\";|pnpmDepsHash = \"${pnpm_hash}\";|" "$source_file"
+  perl -0pi -e "s|pnpmDepsHash = \"[^\"]*\";|pnpmDepsHash = \"${pnpm_hash}\";|" "$source_file"
   if ! nix build .#clawdbot-gateway --accept-flake-config >"$build_log" 2>&1; then
     tail -n 200 "$build_log" >&2 || true
     rm -f "$build_log"
