@@ -47,3 +47,30 @@ if path.exists():
 PY
   fi
 fi
+
+if [ -f src/docker-setup.test.ts ]; then
+  if ! grep -q "#!/bin/sh" src/docker-setup.test.ts; then
+    python3 - <<'PY'
+from pathlib import Path
+
+path = Path("src/docker-setup.test.ts")
+if path.exists():
+    text = path.read_text()
+    text = text.replace("#!/usr/bin/env bash", "#!/bin/sh")
+    text = text.replace("set -euo pipefail", "set -eu")
+    text = text.replace(
+        'if [[ "${1:-}" == "compose" && "${2:-}" == "version" ]]; then',
+        'if [ "${1:-}" = "compose" ] && [ "${2:-}" = "version" ]; then',
+    )
+    text = text.replace(
+        'if [[ "${1:-}" == "build" ]]; then',
+        'if [ "${1:-}" = "build" ]; then',
+    )
+    text = text.replace(
+        'if [[ "${1:-}" == "compose" ]]; then',
+        'if [ "${1:-}" = "compose" ]; then',
+    )
+    path.write_text(text)
+PY
+  fi
+fi
