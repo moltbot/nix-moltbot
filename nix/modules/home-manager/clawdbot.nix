@@ -300,6 +300,8 @@ let
     configPath = "${cfg.stateDir}/clawdbot.json";
     logPath = "/tmp/clawdbot/clawdbot-gateway.log";
     gatewayPort = 18789;
+    gatewayPath = null;
+    gatewayPnpmDepsHash = lib.fakeHash;
     providers = cfg.providers;
     routing = cfg.routing;
     launchd = cfg.launchd;
@@ -307,6 +309,10 @@ let
     plugins = cfg.plugins;
     configOverrides = {};
     config = {};
+    agent = {
+      model = cfg.defaults.model;
+      thinkingDefault = cfg.defaults.thinkingDefault;
+    };
     appDefaults = {
       enable = true;
       attachExistingOnly = true;
