@@ -4296,6 +4296,28 @@ in
 
   models = lib.mkOption {
     type = t.submodule { options = {
+    bedrockDiscovery = lib.mkOption {
+      type = t.submodule { options = {
+      defaultContextWindow = lib.mkOption {
+        type = t.int;
+      };
+      defaultMaxTokens = lib.mkOption {
+        type = t.int;
+      };
+      enabled = lib.mkOption {
+        type = t.bool;
+      };
+      providerFilter = lib.mkOption {
+        type = t.listOf (t.str);
+      };
+      refreshInterval = lib.mkOption {
+        type = t.int;
+      };
+      region = lib.mkOption {
+        type = t.str;
+      };
+    }; };
+    };
     mode = lib.mkOption {
       type = t.oneOf [ t.enum [ "merge" ] t.enum [ "replace" ] ];
     };
