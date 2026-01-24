@@ -33,14 +33,20 @@ let
         }
       ];
     };
+  } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+    # Disable memory slot on Linux - memory-core plugin not available for headless servers
+    # See: https://github.com/clawdbot/clawdbot/blob/main/docs/concepts/memory.md
+    plugins.slots.memory = "none";
   };
 
   mkTelegramConfig = inst: lib.optionalAttrs inst.providers.telegram.enable {
-    telegram = {
-      enabled = true;
-      tokenFile = inst.providers.telegram.botTokenFile;
-      allowFrom = inst.providers.telegram.allowFrom;
-      groups = inst.providers.telegram.groups;
+    channels = {
+      telegram = {
+        enabled = true;
+        tokenFile = inst.providers.telegram.botTokenFile;
+        allowFrom = inst.providers.telegram.allowFrom;
+        groups = inst.providers.telegram.groups;
+      };
     };
   };
 
@@ -48,7 +54,7 @@ let
     messages = {
       queue = {
         mode = inst.routing.queue.mode;
-        byProvider = inst.routing.queue.byProvider;
+        byChannel = inst.routing.queue.byProvider;
       };
     };
   };
@@ -996,13 +1002,13 @@ in {
     firstParty = {
       summarize.enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Enable the summarize plugin (first-party).";
+        default = pkgs.stdenv.hostPlatform.isDarwin; # macOS-only: uses macOS-specific dependencies
+        description = "Enable the summarize plugin (first-party, macOS only).";
       };
       peekaboo.enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Enable the peekaboo plugin (first-party).";
+        default = pkgs.stdenv.hostPlatform.isDarwin; # macOS-only: screenshot tool
+        description = "Enable the peekaboo plugin (first-party, macOS only).";
       };
       oracle.enable = lib.mkOption {
         type = lib.types.bool;
@@ -1022,7 +1028,7 @@ in {
       camsnap.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable the camsnap plugin (first-party).";
+        description = "Enable the camsnap plugin (first-party, macOS only).";
       };
       gogcli.enable = lib.mkOption {
         type = lib.types.bool;
@@ -1042,7 +1048,7 @@ in {
       imsg.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable the imsg plugin (first-party).";
+        description = "Enable the imsg plugin (first-party, macOS only).";
       };
     };
 
@@ -1176,13 +1182,13 @@ in {
     );
 
     home.activation.clawdbotDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      /bin/mkdir -p ${lib.concatStringsSep " " (lib.concatMap (item: item.dirs) instanceConfigs)}
-      ${lib.optionalString (pluginStateDirsAll != []) "/bin/mkdir -p ${lib.concatStringsSep " " pluginStateDirsAll}"}
+      run mkdir -p ${lib.concatStringsSep " " (lib.concatMap (item: item.dirs) instanceConfigs)}
+      ${lib.optionalString (pluginStateDirsAll != []) "run mkdir -p ${lib.concatStringsSep " " pluginStateDirsAll}"}
     '';
 
     home.activation.clawdbotConfigFiles = lib.hm.dag.entryAfter [ "clawdbotDirs" ] ''
       set -euo pipefail
-      ${lib.concatStringsSep "\n" (map (item: "/bin/ln -sfn ${item.configFile} ${item.configPath}") instanceConfigs)}
+      ${lib.concatStringsSep "\n" (map (item: "run ln -sfn ${item.configFile} ${item.configPath}") instanceConfigs)}
     '';
 
     home.activation.clawdbotPluginGuard = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
