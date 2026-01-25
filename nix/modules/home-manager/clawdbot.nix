@@ -897,6 +897,18 @@ in {
       default = pkgs.clawdbot;
       description = "Clawdbot batteries-included package.";
     };
+    
+    manageConfig = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Manage configuration files (clawdbot.json) via Home Manager.";
+    };
+
+    manageDocuments = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Manage document and skill files via Home Manager.";
+    };
 
     toolNames = lib.mkOption {
       type = lib.types.nullOr (lib.types.listOf lib.types.str);
@@ -1169,7 +1181,7 @@ in {
     );
 
     home.file =
-      (lib.listToAttrs (map (item: item.homeFile) instanceConfigs))
+      (if cfg.manageConfig then (lib.listToAttrs (map (item: item.homeFile) instanceConfigs)) else {})
       // (lib.optionalAttrs (pkgs.stdenv.hostPlatform.isDarwin && appPackage != null && cfg.installApp) {
         "Applications/Clawdbot.app" = {
           source = "${appPackage}/Applications/Clawdbot.app";
@@ -1178,10 +1190,10 @@ in {
         };
       })
       // (lib.listToAttrs appInstalls)
-      // documentsFiles
-      // skillFiles
-      // pluginSkillsFiles
-      // pluginConfigFiles
+      // (if cfg.manageDocuments then documentsFiles else {})
+      // (if cfg.manageDocuments then skillFiles else {})
+      // (if cfg.manageDocuments then pluginSkillsFiles else {})
+      // (if cfg.manageDocuments then pluginConfigFiles else {})
       // (lib.optionalAttrs cfg.reloadScript.enable {
         ".local/bin/clawdbot-reload" = {
           executable = true;
@@ -1189,7 +1201,7 @@ in {
         };
       });
 
-    home.activation.clawdbotDocumentGuard = lib.mkIf documentsEnabled (
+    home.activation.clawdbotDocumentGuard = lib.mkIf (documentsEnabled && cfg.manageDocuments) (
       lib.hm.dag.entryBefore [ "writeBoundary" ] ''
         set -euo pipefail
         ${documentsGuard}
@@ -1201,15 +1213,15 @@ in {
       ${lib.optionalString (pluginStateDirsAll != []) "run mkdir -p ${lib.concatStringsSep " " pluginStateDirsAll}"}
     '';
 
-    home.activation.clawdbotConfigFiles = lib.hm.dag.entryAfter [ "clawdbotDirs" ] ''
+    home.activation.clawdbotConfigFiles = lib.mkIf cfg.manageConfig (lib.hm.dag.entryAfter [ "clawdbotDirs" ] ''
       set -euo pipefail
       ${lib.concatStringsSep "\n" (map (item: "run ln -sfn ${item.configFile} ${item.configPath}") instanceConfigs)}
-    '';
+    '');
 
-    home.activation.clawdbotPluginGuard = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.clawdbotPluginGuard = lib.mkIf cfg.manageDocuments (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       set -euo pipefail
       ${pluginGuards}
-    '';
+    '');
 
     home.activation.clawdbotAppDefaults = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && appDefaults != {}) (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
