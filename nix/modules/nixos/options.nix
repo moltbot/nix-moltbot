@@ -241,8 +241,54 @@ in {
       description = "Workspace directory for Openclaw agent skills.";
     };
 
-    # NOTE: documents and skills options are not yet implemented for NixOS module.
-    # See home-manager module for the full implementation. PRs welcome.
+    documents = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Path to documents directory (AGENTS.md, SOUL.md, TOOLS.md).";
+    };
+
+    skills = lib.mkOption {
+      type = lib.types.listOf (lib.types.submodule {
+        options = {
+          name = lib.mkOption {
+            type = lib.types.str;
+            description = "Skill name (directory name).";
+          };
+          description = lib.mkOption {
+            type = lib.types.str;
+            default = "";
+            description = "Short description for skill frontmatter.";
+          };
+          homepage = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Optional homepage URL.";
+          };
+          body = lib.mkOption {
+            type = lib.types.str;
+            default = "";
+            description = "Optional skill body (markdown).";
+          };
+          clawdbot = lib.mkOption {
+            type = lib.types.nullOr lib.types.attrs;
+            default = null;
+            description = "Optional clawdbot metadata.";
+          };
+          mode = lib.mkOption {
+            type = lib.types.enum [ "copy" "inline" ];
+            default = "copy";
+            description = "Install mode for the skill (symlink not supported for system service).";
+          };
+          source = lib.mkOption {
+            type = lib.types.nullOr lib.types.path;
+            default = null;
+            description = "Source path for the skill (required for copy mode).";
+          };
+        };
+      });
+      default = [];
+      description = "Declarative skills installed into workspace.";
+    };
 
     plugins = lib.mkOption {
       type = lib.types.listOf (lib.types.submodule {

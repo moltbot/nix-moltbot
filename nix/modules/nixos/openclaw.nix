@@ -201,6 +201,11 @@ let
 
   instanceConfigs = lib.mapAttrs mkInstanceConfig enabledInstances;
 
+  # Documents and skills implementation
+  documentsSkills = import ./documents-skills.nix {
+    inherit lib pkgs cfg instanceConfigs toolSets;
+  };
+
   # Assertions
   assertions = lib.flatten (lib.mapAttrsToList (name: inst: [
     {
@@ -229,7 +234,9 @@ in {
   };
 
   config = lib.mkIf (cfg.enable || cfg.instances != {}) {
-    inherit assertions;
+    assertions = assertions
+      ++ documentsSkills.documentsAssertions
+      ++ documentsSkills.skillAssertions;
 
     # Create system user and group
     users.users.${cfg.user} = {
@@ -242,11 +249,12 @@ in {
 
     users.groups.${cfg.group} = {};
 
-    # Create state directories via tmpfiles
+    # Create state directories and install documents/skills via tmpfiles
     systemd.tmpfiles.rules = lib.flatten (lib.mapAttrsToList (name: instCfg: [
       "d ${instCfg.stateDir} 0750 ${cfg.user} ${cfg.group} -"
       "d ${instCfg.workspaceDir} 0750 ${cfg.user} ${cfg.group} -"
-    ]) instanceConfigs);
+      "d ${instCfg.workspaceDir}/skills 0750 ${cfg.user} ${cfg.group} -"
+    ]) instanceConfigs) ++ documentsSkills.tmpfilesRules;
 
     # Systemd services with hardening
     systemd.services = lib.mapAttrs' (name: instCfg: lib.nameValuePair instCfg.unitName {
