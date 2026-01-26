@@ -21,9 +21,17 @@ pkgs.testers.nixosTest {
     services.openclaw = {
       enable = true;
       package = pkgs.openclaw-gateway;
-      # No API key - service will start but won't be fully functional
-      # That's fine for testing systemd/hardening
+      # Dummy token for testing - service won't be fully functional but will start
+      providers.anthropic.oauthTokenFile = "/run/openclaw-test-token";
+      gateway.auth.tokenFile = "/run/openclaw-gateway-token";
     };
+
+    # Create dummy token files for testing
+    system.activationScripts.openclawTestTokens = ''
+      echo "test-oauth-token" > /run/openclaw-test-token
+      echo "test-gateway-token" > /run/openclaw-gateway-token
+      chmod 600 /run/openclaw-test-token /run/openclaw-gateway-token
+    '';
 
     # Create a test file in /home to verify hardening
     users.users.testuser = {

@@ -205,6 +205,7 @@ let
 
   # Assertions
   assertions = lib.flatten (lib.mapAttrsToList (name: inst: [
+    # Telegram assertions
     {
       assertion = !inst.providers.telegram.enable || inst.providers.telegram.botTokenFile != "";
       message = "services.openclaw.instances.${name}.providers.telegram.botTokenFile must be set when Telegram is enabled.";
@@ -212,6 +213,20 @@ let
     {
       assertion = !inst.providers.telegram.enable || (lib.length inst.providers.telegram.allowFrom > 0);
       message = "services.openclaw.instances.${name}.providers.telegram.allowFrom must be non-empty when Telegram is enabled.";
+    }
+    # Anthropic auth assertions
+    {
+      assertion = inst.providers.anthropic.apiKeyFile != "" || inst.providers.anthropic.oauthTokenFile != null;
+      message = "services.openclaw.instances.${name}: either providers.anthropic.apiKeyFile or providers.anthropic.oauthTokenFile must be set.";
+    }
+    # Gateway auth assertions
+    {
+      assertion = inst.gateway.auth.mode != "token" || inst.gateway.auth.tokenFile != null;
+      message = "services.openclaw.instances.${name}.gateway.auth.tokenFile must be set when auth mode is 'token'.";
+    }
+    {
+      assertion = inst.gateway.auth.mode != "password" || inst.gateway.auth.passwordFile != null;
+      message = "services.openclaw.instances.${name}.gateway.auth.passwordFile must be set when auth mode is 'password'.";
     }
   ]) enabledInstances);
 
