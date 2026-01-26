@@ -14,27 +14,58 @@ Add a NixOS module (`nixosModules.clawdbot`) that runs the gateway as an isolate
 
 Currently the gateway runs as the user's personal account, giving the LLM full access to SSH keys, credentials, personal files, etc. Running as a dedicated locked-down user contains the blast radius if the LLM is compromised.
 
-## Implementation Plan
+## Status: Working
 
-1. Create `nix/modules/nixos/clawdbot.nix` (new NixOS module)
-2. Create dedicated `clawdbot` system user with minimal privileges
-3. Run gateway as system-level systemd service (not user service)
-4. Apply systemd hardening:
-   - `DynamicUser=true` or dedicated user
-   - `ProtectHome=true`
-   - `PrivateTmp=true`
-   - `NoNewPrivileges=true`
-   - `ProtectSystem=strict`
-5. Handle credential management (Claude OAuth in isolated user's home)
-6. Export as `nixosModules.clawdbot` in flake.nix
+Tested and deployed successfully. The service runs with full systemd hardening.
 
-## Reference
+## Implementation
 
-- Existing home-manager module: `nix/modules/home-manager/clawdbot.nix`
-- Systemd service definition: lines 803-829
-- The home-manager module can coexist for users who prefer user-level service
+### Files
+
+- `nix/modules/nixos/clawdbot.nix` - Main module
+- `nix/modules/nixos/options.nix` - Option definitions
+
+### Features
+
+- Dedicated `clawdbot` system user with minimal privileges
+- System-level systemd service with hardening:
+  - `ProtectHome=true`
+  - `ProtectSystem=strict`
+  - `PrivateTmp=true`, `PrivateDevices=true`
+  - `NoNewPrivileges=true`
+  - `CapabilityBoundingSet=""` (no capabilities)
+  - `SystemCallFilter=@system-service`
+  - `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK`
+  - Full namespace/kernel protection
+- Multi-instance support via `instances.<name>`
+- Credential loading from files at runtime (wrapper script)
+
+### Credential Management
+
+Uses `providers.anthropic.oauthTokenFile` - a long-lived token from `claude setup-token`.
+
+```nix
+services.clawdbot = {
+  enable = true;
+  providers.anthropic.oauthTokenFile = config.age.secrets.clawdbot-token.path;
+  providers.telegram = {
+    enable = true;
+    botTokenFile = config.age.secrets.telegram-token.path;
+    allowFrom = [ 12345678 ];
+  };
+};
+```
+
+The deprecated `anthropic:claude-cli` profile (which tried to sync OAuth from `~/.claude/`) was not implemented - upstream deprecated it in favor of `setup-token` flow.
+
+### Gateway Auth
+
+Upstream now requires gateway authentication. Options:
+
+- `gateway.auth.tokenFile` / `gateway.auth.passwordFile` - load from file
+- `instances.<name>.configOverrides.gateway.auth` - inline in config (for non-sensitive cases)
 
 ## Notes
 
-- This branch has PR #10 cherry-picked (NixOS/aarch64 support fixes)
-- Claude OAuth credentials need separate setup for the clawdbot user
+- Node.js JIT requires `SystemCallFilter=@system-service` (can't use `~@privileged`)
+- `AF_NETLINK` needed for `os.networkInterfaces()` in Node.js
