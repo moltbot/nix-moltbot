@@ -1,6 +1,13 @@
 { lib
 , stdenvNoCC
 , writeShellScript
+, instanceName ? "default"
+, gatewayWrapper
+, stateDir
+, logPath
+, gatewayPort ? 18789
+, homeDir ? ""
+, configPath ? ""
 }:
 
 # Creates a minimal .app bundle that runs the clawdbot gateway.
@@ -15,15 +22,6 @@
 #   1. Build and install this .app to ~/Applications/
 #   2. Grant FDA in System Settings > Privacy & Security > Full Disk Access
 #   3. The LaunchAgent will run the app's executable with proper env vars
-
-{ instanceName ? "default"
-, gatewayWrapper  # The gateway wrapper script (with env vars, plugin paths, etc.)
-, stateDir        # Used for working directory context
-, logPath         # Informational (actual logging handled by LaunchAgent)
-, gatewayPort ? 18789
-, homeDir ? ""    # Home directory for env var fallback
-, configPath ? "" # Config path for env var fallback
-}:
 
 let
   appName = if instanceName == "default" 
