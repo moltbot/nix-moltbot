@@ -10,19 +10,19 @@ const argValue = (flag: string): string | null => {
 };
 
 const repo = argValue("--repo") ?? process.cwd();
-const outPath = argValue("--out") ?? path.join(process.cwd(), "nix/generated/moltbot-config-options.nix");
+const outPath = argValue("--out") ?? path.join(process.cwd(), "nix/generated/openclaw-config-options.nix");
 
 const schemaPath = path.join(repo, "src/config/zod-schema.ts");
 const schemaUrl = pathToFileURL(schemaPath).href;
 
 const loadSchema = async (): Promise<Record<string, unknown>> => {
   const mod = await import(schemaUrl);
-  const MoltbotSchema = mod.MoltbotSchema;
-  if (!MoltbotSchema || typeof MoltbotSchema.toJSONSchema !== "function") {
-    console.error(`MoltbotSchema not found at ${schemaPath}`);
+  const OpenClawSchema = mod.OpenClawSchema;
+  if (!OpenClawSchema || typeof OpenClawSchema.toJSONSchema !== "function") {
+    console.error(`OpenClawSchema not found at ${schemaPath}`);
     process.exit(1);
   }
-  return MoltbotSchema.toJSONSchema({
+  return OpenClawSchema.toJSONSchema({
     target: "draft-07",
     unrepresentable: "any",
   }) as Record<string, unknown>;
