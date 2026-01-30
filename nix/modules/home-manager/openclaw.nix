@@ -54,8 +54,8 @@ let
   };
 
   firstPartySources = let
-    stepieteRev = "e4e2cac265de35175015cf1ae836b0b30dddd7b7";
-    stepieteNarHash = "sha256-L8bKt5rK78dFP3ZoP1Oi1SSAforXVHZDsSiDO+NsvEE=";
+    stepieteRev = "e406b6dc7d066afd1a53bd125f079cf80435a813";
+    stepieteNarHash = "sha256-oytfuJiVrsFM4cQQLGyDp1/HlsihIOp++rIh2tThIZo=";
     stepiete = tool:
       "github:openclaw/nix-steipete-tools?dir=tools/${tool}&rev=${stepieteRev}&narHash=${stepieteNarHash}";
   in {
