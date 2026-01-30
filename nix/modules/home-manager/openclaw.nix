@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  cfg = config.programs.moltbot;
+  cfg = config.programs.openclaw;
   homeDir = config.home.homeDirectory;
   autoExcludeTools = lib.optionals config.programs.git.enable [ "git" ];
   effectiveExcludeTools = lib.unique (cfg.excludeTools ++ autoExcludeTools);
@@ -12,11 +12,11 @@ let
   toolOverridesEnabled = cfg.toolNames != null || effectiveExcludeTools != [];
   toolSets = import ../../tools/extended.nix ({ inherit pkgs; } // toolOverrides);
   defaultPackage =
-    if toolOverridesEnabled && cfg.package == pkgs.moltbot
-    then (pkgs.moltbotPackages.withTools toolOverrides).moltbot
+    if toolOverridesEnabled && cfg.package == pkgs.openclaw
+    then (pkgs.openclawPackages.withTools toolOverrides).openclaw
     else cfg.package;
   appPackage = if cfg.appPackage != null then cfg.appPackage else defaultPackage;
-  generatedConfigOptions = import ../../generated/moltbot-config-options.nix { lib = lib; };
+  generatedConfigOptions = import ../../generated/openclaw-config-options.nix { lib = lib; };
 
   mkBaseConfig = workspaceDir: inst: {
     gateway = { mode = "local"; };
@@ -57,7 +57,7 @@ let
     stepieteRev = "e4e2cac265de35175015cf1ae836b0b30dddd7b7";
     stepieteNarHash = "sha256-L8bKt5rK78dFP3ZoP1Oi1SSAforXVHZDsSiDO+NsvEE=";
     stepiete = tool:
-      "github:moltbot/nix-steipete-tools?dir=tools/${tool}&rev=${stepieteRev}&narHash=${stepieteNarHash}";
+      "github:openclaw/nix-steipete-tools?dir=tools/${tool}&rev=${stepieteRev}&narHash=${stepieteNarHash}";
   in {
     summarize = stepiete "summarize";
     peekaboo = stepiete "peekaboo";
@@ -82,53 +82,53 @@ let
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable this Moltbot instance.";
+        description = "Enable this Openclaw instance.";
       };
 
       package = lib.mkOption {
         type = lib.types.package;
         default = defaultPackage;
-        description = "Moltbot batteries-included package.";
+        description = "Openclaw batteries-included package.";
       };
 
       stateDir = lib.mkOption {
         type = lib.types.str;
         default = if name == "default"
-          then "${homeDir}/.moltbot"
-          else "${homeDir}/.moltbot-${name}";
-        description = "State directory for this Moltbot instance (logs, sessions, config).";
+          then "${homeDir}/.openclaw"
+          else "${homeDir}/.openclaw-${name}";
+        description = "State directory for this Openclaw instance (logs, sessions, config).";
       };
 
       workspaceDir = lib.mkOption {
         type = lib.types.str;
         default = "${config.stateDir}/workspace";
-        description = "Workspace directory for this Moltbot instance.";
+        description = "Workspace directory for this Openclaw instance.";
       };
 
       configPath = lib.mkOption {
         type = lib.types.str;
-        default = "${config.stateDir}/moltbot.json";
-        description = "Path to generated Moltbot config JSON.";
+        default = "${config.stateDir}/openclaw.json";
+        description = "Path to generated Openclaw config JSON.";
       };
 
       logPath = lib.mkOption {
         type = lib.types.str;
         default = if name == "default"
-          then "/tmp/moltbot/moltbot-gateway.log"
-          else "/tmp/moltbot/moltbot-gateway-${name}.log";
-        description = "Log path for this Moltbot gateway instance.";
+          then "/tmp/openclaw/openclaw-gateway.log"
+          else "/tmp/openclaw/openclaw-gateway-${name}.log";
+        description = "Log path for this Openclaw gateway instance.";
       };
 
       gatewayPort = lib.mkOption {
         type = lib.types.int;
         default = 18789;
-        description = "Gateway port used by the Moltbot desktop app.";
+        description = "Gateway port used by the Openclaw desktop app.";
       };
 
       gatewayPath = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
-        description = "Local path to Moltbot gateway source (dev only).";
+        description = "Local path to Openclaw gateway source (dev only).";
       };
 
       gatewayPnpmDepsHash = lib.mkOption {
@@ -227,41 +227,41 @@ let
       launchd.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Run Moltbot gateway via launchd (macOS).";
+        description = "Run Openclaw gateway via launchd (macOS).";
       };
 
       launchd.label = lib.mkOption {
         type = lib.types.str;
         default = if name == "default"
-          then "com.steipete.moltbot.gateway"
-          else "com.steipete.moltbot.gateway.${name}";
+          then "com.steipete.openclaw.gateway"
+          else "com.steipete.openclaw.gateway.${name}";
         description = "launchd label for this instance.";
       };
 
       systemd.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Run Moltbot gateway via systemd user service (Linux).";
+        description = "Run Openclaw gateway via systemd user service (Linux).";
       };
 
       systemd.unitName = lib.mkOption {
         type = lib.types.str;
         default = if name == "default"
-          then "moltbot-gateway"
-          else "moltbot-gateway-${name}";
+          then "openclaw-gateway"
+          else "openclaw-gateway-${name}";
         description = "systemd user service unit name for this instance.";
       };
 
       app.install.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Install Moltbot.app for this instance.";
+        description = "Install Openclaw.app for this instance.";
       };
 
       app.install.path = lib.mkOption {
         type = lib.types.str;
-        default = "${homeDir}/Applications/Moltbot.app";
-        description = "Destination path for this instance's Moltbot.app bundle.";
+        default = "${homeDir}/Applications/Openclaw.app";
+        description = "Destination path for this instance's Openclaw.app bundle.";
       };
 
       appDefaults = {
@@ -281,13 +281,13 @@ let
       configOverrides = lib.mkOption {
         type = lib.types.attrs;
         default = {};
-        description = "Additional Moltbot config to merge into the generated JSON.";
+        description = "Additional Openclaw config to merge into the generated JSON.";
       };
 
       config = lib.mkOption {
         type = lib.types.submodule { options = generatedConfigOptions; };
         default = {};
-        description = "Upstream Moltbot config (generated from schema).";
+        description = "Upstream Openclaw config (generated from schema).";
       };
     };
   };
@@ -297,8 +297,8 @@ let
     package = cfg.package;
     stateDir = cfg.stateDir;
     workspaceDir = cfg.workspaceDir;
-    configPath = "${cfg.stateDir}/moltbot.json";
-    logPath = "/tmp/moltbot/moltbot-gateway.log";
+    configPath = "${cfg.stateDir}/openclaw.json";
+    logPath = "/tmp/openclaw/openclaw-gateway.log";
     gatewayPort = 18789;
     providers = cfg.providers;
     routing = cfg.routing;
@@ -314,7 +314,7 @@ let
     app = {
       install = {
         enable = false;
-        path = "${homeDir}/Applications/Moltbot.app";
+        path = "${homeDir}/Applications/Openclaw.app";
       };
     };
   };
@@ -343,8 +343,8 @@ let
   renderSkill = skill:
     let
       metadataLine =
-        if skill ? moltbot && skill.moltbot != null
-        then "metadata: ${builtins.toJSON { moltbot = skill.moltbot; }}"
+        if skill ? openclaw && skill.openclaw != null
+        then "metadata: ${builtins.toJSON { openclaw = skill.openclaw; }}"
         else null;
       homepageLine =
         if skill ? homepage && skill.homepage != null
@@ -372,7 +372,7 @@ let
         if duplicateNames == [] then [] else [
           {
             assertion = false;
-            message = "programs.moltbot.skills has duplicate names: ${lib.concatStringsSep ", " duplicateNames}";
+            message = "programs.openclaw.skills has duplicate names: ${lib.concatStringsSep ", " duplicateNames}";
           }
         ];
     in
@@ -398,7 +398,7 @@ let
                   name = "${base}/${skill.name}";
                   value = {
                     source = builtins.path {
-                      name = "moltbot-skill-${skill.name}";
+                      name = "openclaw-skill-${skill.name}";
                       path = source;
                     };
                     recursive = true;
@@ -420,19 +420,19 @@ let
   documentsAssertions = lib.optionals documentsEnabled [
     {
       assertion = builtins.pathExists cfg.documents;
-      message = "programs.moltbot.documents must point to an existing directory.";
+      message = "programs.openclaw.documents must point to an existing directory.";
     }
     {
       assertion = builtins.pathExists (cfg.documents + "/AGENTS.md");
-      message = "Missing AGENTS.md in programs.moltbot.documents.";
+      message = "Missing AGENTS.md in programs.openclaw.documents.";
     }
     {
       assertion = builtins.pathExists (cfg.documents + "/SOUL.md");
-      message = "Missing SOUL.md in programs.moltbot.documents.";
+      message = "Missing SOUL.md in programs.openclaw.documents.";
     }
     {
       assertion = builtins.pathExists (cfg.documents + "/TOOLS.md");
-      message = "Missing TOOLS.md in programs.moltbot.documents.";
+      message = "Missing TOOLS.md in programs.openclaw.documents.";
     }
   ];
 
@@ -441,7 +441,7 @@ let
       let
         guardLine = file: ''
           if [ -e "${file}" ] && [ ! -L "${file}" ]; then
-            echo "Moltbot documents are managed by Nix. Please adopt ${file} into your documents directory and re-run." >&2
+            echo "Openclaw documents are managed by Nix. Please adopt ${file} into your documents directory and re-run." >&2
             exit 1
           fi
         '';
@@ -502,13 +502,13 @@ let
           ];
         reportText = lib.concatStringsSep "\n" reportLines;
       in
-        pkgs.writeText "moltbot-tools-report.md" reportText
+        pkgs.writeText "openclaw-tools-report.md" reportText
     else
       null;
 
   toolsWithReport =
     if documentsEnabled then
-      pkgs.runCommand "moltbot-tools-with-report.md" {} ''
+      pkgs.runCommand "openclaw-tools-with-report.md" {} ''
         cat ${cfg.documents + "/TOOLS.md"} > $out
         echo "" >> $out
         cat ${toolsReport} >> $out
@@ -537,15 +537,15 @@ let
 
   resolvePlugin = plugin: let
     flake = builtins.getFlake plugin.source;
-    moltbotPlugin =
-      if flake ? moltbotPlugin then flake.moltbotPlugin
-      else throw "moltbotPlugin missing in ${plugin.source}";
-    needs = moltbotPlugin.needs or {};
+    openclawPlugin =
+      if flake ? openclawPlugin then flake.openclawPlugin
+      else throw "openclawPlugin missing in ${plugin.source}";
+    needs = openclawPlugin.needs or {};
   in {
     source = plugin.source;
-    name = moltbotPlugin.name or (throw "moltbotPlugin.name missing in ${plugin.source}");
-    skills = moltbotPlugin.skills or [];
-    packages = moltbotPlugin.packages or [];
+    name = openclawPlugin.name or (throw "openclawPlugin.name missing in ${plugin.source}");
+    skills = openclawPlugin.skills or [];
+    packages = openclawPlugin.packages or [];
     needs = {
       stateDirs = needs.stateDirs or [];
       requiredEnv = needs.requiredEnv or [];
@@ -567,7 +567,7 @@ let
         if duplicates == []
         then ordered
         else lib.warn
-          "programs.moltbot.instances.${instName}: duplicate plugin names detected (${lib.concatStringsSep ", " duplicates}); last entry wins."
+          "programs.openclaw.instances.${instName}: duplicate plugin names detected (${lib.concatStringsSep ", " duplicates}); last entry wins."
           ordered
     ) enabledInstances;
 
@@ -615,11 +615,11 @@ let
             missing = missingFor p;
           in {
             assertion = missing == [];
-            message = "programs.moltbot.instances.${instName}: plugin ${p.name} missing required env: ${lib.concatStringsSep ", " missing}";
+            message = "programs.openclaw.instances.${instName}: plugin ${p.name} missing required env: ${lib.concatStringsSep ", " missing}";
           };
         mkConfigAssertion = p: {
           assertion = !(configMissingStateDir p);
-          message = "programs.moltbot.instances.${instName}: plugin ${p.name} provides settings but declares no stateDirs (needed for config.json).";
+          message = "programs.openclaw.instances.${instName}: plugin ${p.name} provides settings but declares no stateDirs (needed for config.json).";
         };
       in
         (map mkAssertion plugins) ++ (map mkConfigAssertion plugins)
@@ -717,10 +717,10 @@ let
   mkInstanceConfig = name: inst: let
     gatewayPackage =
       if inst.gatewayPath != null then
-        pkgs.callPackage ../../packages/moltbot-gateway.nix {
+        pkgs.callPackage ../../packages/openclaw-gateway.nix {
           gatewaySrc = builtins.path {
             path = inst.gatewayPath;
-            name = "moltbot-gateway-src";
+            name = "openclaw-gateway-src";
           };
           pnpmDepsHash = inst.gatewayPnpmDepsHash;
         }
@@ -733,8 +733,8 @@ let
       (lib.recursiveUpdate baseConfig (lib.recursiveUpdate (mkTelegramConfig inst) (mkRoutingConfig inst)))
       inst.configOverrides;
     configJson = builtins.toJSON mergedConfig;
-    configFile = pkgs.writeText "moltbot-${name}.json" configJson;
-    gatewayWrapper = pkgs.writeShellScriptBin "moltbot-gateway-${name}" ''
+    configFile = pkgs.writeText "openclaw-${name}.json" configJson;
+    gatewayWrapper = pkgs.writeShellScriptBin "openclaw-gateway-${name}" ''
       set -euo pipefail
 
       if [ -n "${lib.makeBinPath pluginPackages}" ]; then
@@ -756,7 +756,7 @@ let
         export ANTHROPIC_API_KEY
       fi
 
-      exec "${gatewayPackage}/bin/moltbot" "$@"
+      exec "${gatewayPackage}/bin/openclaw" "$@"
     '';
   in {
     homeFile = {
@@ -774,7 +774,7 @@ let
         config = {
           Label = inst.launchd.label;
           ProgramArguments = [
-            "${gatewayWrapper}/bin/moltbot-gateway-${name}"
+            "${gatewayWrapper}/bin/openclaw-gateway-${name}"
             "gateway"
             "--port"
             "${toString inst.gatewayPort}"
@@ -802,10 +802,10 @@ let
     systemdService = lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && inst.systemd.enable) {
       "${inst.systemd.unitName}" = {
         Unit = {
-          Description = "Moltbot gateway (${name})";
+          Description = "Openclaw gateway (${name})";
         };
         Service = {
-          ExecStart = "${gatewayWrapper}/bin/moltbot-gateway-${name} gateway --port ${toString inst.gatewayPort}";
+          ExecStart = "${gatewayWrapper}/bin/openclaw-gateway-${name} gateway --port ${toString inst.gatewayPort}";
           WorkingDirectory = inst.stateDir;
           Restart = "always";
           RestartSec = "1s";
@@ -837,7 +837,7 @@ let
     else {
       name = lib.removePrefix "${homeDir}/" inst.app.install.path;
       value = {
-        source = "${appPackage}/Applications/Moltbot.app";
+        source = "${appPackage}/Applications/Openclaw.app";
         recursive = true;
         force = true;
       };
@@ -858,22 +858,22 @@ let
   assertions = lib.flatten (lib.mapAttrsToList (name: inst: [
     {
       assertion = !inst.providers.telegram.enable || inst.providers.telegram.botTokenFile != "";
-      message = "programs.moltbot.instances.${name}.providers.telegram.botTokenFile must be set when Telegram is enabled.";
+      message = "programs.openclaw.instances.${name}.providers.telegram.botTokenFile must be set when Telegram is enabled.";
     }
     {
       assertion = !inst.providers.telegram.enable || (lib.length inst.providers.telegram.allowFrom > 0);
-      message = "programs.moltbot.instances.${name}.providers.telegram.allowFrom must be non-empty when Telegram is enabled.";
+      message = "programs.openclaw.instances.${name}.providers.telegram.allowFrom must be non-empty when Telegram is enabled.";
     }
   ]) enabledInstances);
 
 in {
-  options.programs.moltbot = {
-    enable = lib.mkEnableOption "Moltbot (batteries-included)";
+  options.programs.openclaw = {
+    enable = lib.mkEnableOption "Openclaw (batteries-included)";
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.moltbot;
-      description = "Moltbot batteries-included package.";
+      default = pkgs.openclaw;
+      description = "Openclaw batteries-included package.";
     };
 
     toolNames = lib.mkOption {
@@ -891,25 +891,25 @@ in {
     appPackage = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
       default = null;
-      description = "Optional Moltbot app package (defaults to package if unset).";
+      description = "Optional Openclaw app package (defaults to package if unset).";
     };
 
     installApp = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Install Moltbot.app at the default location.";
+      description = "Install Openclaw.app at the default location.";
     };
 
     stateDir = lib.mkOption {
       type = lib.types.str;
-      default = "${homeDir}/.moltbot";
-      description = "State directory for Moltbot (logs, sessions, config).";
+      default = "${homeDir}/.openclaw";
+      description = "State directory for Openclaw (logs, sessions, config).";
     };
 
     workspaceDir = lib.mkOption {
       type = lib.types.str;
-      default = "${homeDir}/.moltbot/workspace";
-      description = "Workspace directory for Moltbot agent skills.";
+      default = "${homeDir}/.openclaw/workspace";
+      description = "Workspace directory for Openclaw agent skills.";
     };
 
     documents = lib.mkOption {
@@ -940,10 +940,10 @@ in {
             default = "";
             description = "Optional skill body (markdown).";
           };
-          moltbot = lib.mkOption {
+          openclaw = lib.mkOption {
             type = lib.types.nullOr lib.types.attrs;
             default = null;
-            description = "Optional moltbot metadata for the skill frontmatter.";
+            description = "Optional openclaw metadata for the skill frontmatter.";
           };
           mode = lib.mkOption {
             type = lib.types.enum [ "symlink" "copy" "inline" ];
@@ -1097,19 +1097,19 @@ in {
     launchd.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Run Moltbot gateway via launchd (macOS).";
+      description = "Run Openclaw gateway via launchd (macOS).";
     };
 
     systemd.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Run Moltbot gateway via systemd user service (Linux).";
+      description = "Run Openclaw gateway via systemd user service (Linux).";
     };
 
     instances = lib.mkOption {
       type = lib.types.attrsOf (lib.types.submodule instanceModule);
       default = {};
-      description = "Named Moltbot instances (prod/test).";
+      description = "Named Openclaw instances (prod/test).";
     };
 
     exposePluginPackages = lib.mkOption {
@@ -1122,14 +1122,14 @@ in {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Install moltbot-reload helper for no-sudo config refresh + gateway restart.";
+        description = "Install openclaw-reload helper for no-sudo config refresh + gateway restart.";
       };
     };
 
     config = lib.mkOption {
       type = lib.types.submodule { options = generatedConfigOptions; };
       default = {};
-      description = "Upstream Moltbot config (generated from schema).";
+      description = "Upstream Openclaw config (generated from schema).";
     };
   };
 
@@ -1137,7 +1137,7 @@ in {
     assertions = assertions ++ [
       {
         assertion = lib.length (lib.attrNames appDefaultsEnabled) <= 1;
-        message = "Only one Moltbot instance may enable appDefaults.";
+        message = "Only one Openclaw instance may enable appDefaults.";
       }
     ] ++ documentsAssertions ++ skillAssertions ++ pluginAssertions ++ pluginSkillAssertions;
 
@@ -1149,8 +1149,8 @@ in {
     home.file =
       (lib.listToAttrs (map (item: item.homeFile) instanceConfigs))
       // (lib.optionalAttrs (pkgs.stdenv.hostPlatform.isDarwin && appPackage != null && cfg.installApp) {
-        "Applications/Moltbot.app" = {
-          source = "${appPackage}/Applications/Moltbot.app";
+        "Applications/Openclaw.app" = {
+          source = "${appPackage}/Applications/Openclaw.app";
           recursive = true;
           force = true;
         };
@@ -1161,44 +1161,44 @@ in {
       // pluginSkillsFiles
       // pluginConfigFiles
       // (lib.optionalAttrs cfg.reloadScript.enable {
-        ".local/bin/moltbot-reload" = {
+        ".local/bin/openclaw-reload" = {
           executable = true;
-          source = ./moltbot-reload.sh;
+          source = ./openclaw-reload.sh;
         };
       });
 
-    home.activation.moltbotDocumentGuard = lib.mkIf documentsEnabled (
+    home.activation.openclawDocumentGuard = lib.mkIf documentsEnabled (
       lib.hm.dag.entryBefore [ "writeBoundary" ] ''
         set -euo pipefail
         ${documentsGuard}
       ''
     );
 
-    home.activation.moltbotDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.openclawDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       /bin/mkdir -p ${lib.concatStringsSep " " (lib.concatMap (item: item.dirs) instanceConfigs)}
       ${lib.optionalString (pluginStateDirsAll != []) "/bin/mkdir -p ${lib.concatStringsSep " " pluginStateDirsAll}"}
     '';
 
-    home.activation.moltbotConfigFiles = lib.hm.dag.entryAfter [ "moltbotDirs" ] ''
+    home.activation.openclawConfigFiles = lib.hm.dag.entryAfter [ "openclawDirs" ] ''
       set -euo pipefail
       ${lib.concatStringsSep "\n" (map (item: "/bin/ln -sfn ${item.configFile} ${item.configPath}") instanceConfigs)}
     '';
 
-    home.activation.moltbotPluginGuard = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.openclawPluginGuard = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       set -euo pipefail
       ${pluginGuards}
     '';
 
-    home.activation.moltbotAppDefaults = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && appDefaults != {}) (
+    home.activation.openclawAppDefaults = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && appDefaults != {}) (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        /usr/bin/defaults write com.steipete.Moltbot moltbot.gateway.attachExistingOnly -bool ${lib.boolToString (appDefaults.attachExistingOnly or true)}
-        /usr/bin/defaults write com.steipete.Moltbot gatewayPort -int ${toString (appDefaults.gatewayPort or 18789)}
+        /usr/bin/defaults write com.steipete.Openclaw openclaw.gateway.attachExistingOnly -bool ${lib.boolToString (appDefaults.attachExistingOnly or true)}
+        /usr/bin/defaults write com.steipete.Openclaw gatewayPort -int ${toString (appDefaults.gatewayPort or 18789)}
       ''
     );
 
-    home.activation.moltbotLaunchdRelink = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+    home.activation.openclawLaunchdRelink = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
       lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-        /usr/bin/env bash ${./moltbot-launchd-relink.sh}
+        /usr/bin/env bash ${./openclaw-launchd-relink.sh}
       ''
     );
 

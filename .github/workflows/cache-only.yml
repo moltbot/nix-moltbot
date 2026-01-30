@@ -61,12 +61,12 @@ jobs:
         run: |
           nix build --no-link --accept-flake-config \
             .#packages.aarch64-darwin.moltbot \
-            .#packages.aarch64-darwin.moltbot-gateway \
-            .#packages.aarch64-darwin.moltbot-tools \
-            .#packages.aarch64-darwin.moltbot-app \
+            .#packages.aarch64-darwin.openclaw-gateway \
+            .#packages.aarch64-darwin.openclaw-tools \
+            .#packages.aarch64-darwin.openclaw-app \
             .#packages.x86_64-linux.moltbot \
-            .#packages.x86_64-linux.moltbot-gateway \
-            .#packages.x86_64-linux.moltbot-tools \
+            .#packages.x86_64-linux.openclaw-gateway \
+            .#packages.x86_64-linux.openclaw-tools \
             .#checks.aarch64-darwin.gateway \
             .#checks.x86_64-linux.gateway \
             .#checks.x86_64-linux.gateway-tests \

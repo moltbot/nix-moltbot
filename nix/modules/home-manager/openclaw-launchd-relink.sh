@@ -30,14 +30,14 @@ link_agent() {
   /bin/launchctl kickstart -k "gui/$UID/$label" 2>/dev/null || true
 }
 
-link_agent "$HOME/Library/LaunchAgents/com.steipete.moltbot.gateway.nix.plist" \
-  "com.steipete.moltbot.gateway.nix"
+link_agent "$HOME/Library/LaunchAgents/com.steipete.openclaw.gateway.nix.plist" \
+  "com.steipete.openclaw.gateway.nix"
 
-link_agent "$HOME/Library/LaunchAgents/com.steipete.moltbot.gateway.nix-test.plist" \
-  "com.steipete.moltbot.gateway.nix-test"
+link_agent "$HOME/Library/LaunchAgents/com.steipete.openclaw.gateway.nix-test.plist" \
+  "com.steipete.openclaw.gateway.nix-test"
 
-link_agent "$HOME/Library/LaunchAgents/com.steipete.moltbot.gateway.prod.plist" \
-  "com.steipete.moltbot.gateway.prod"
+link_agent "$HOME/Library/LaunchAgents/com.steipete.openclaw.gateway.prod.plist" \
+  "com.steipete.openclaw.gateway.prod"
 
-link_agent "$HOME/Library/LaunchAgents/com.steipete.moltbot.gateway.test.plist" \
-  "com.steipete.moltbot.gateway.test"
+link_agent "$HOME/Library/LaunchAgents/com.steipete.openclaw.gateway.test.plist" \
+  "com.steipete.openclaw.gateway.test"

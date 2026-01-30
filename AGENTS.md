@@ -1,4 +1,4 @@
-# AGENTS.md — nix-moltbot
+# AGENTS.md — nix-openclaw
 
 Single source of truth for product direction: `README.md`.
 
@@ -16,22 +16,22 @@ Defaults:
 - NEVER send any message (iMessage, email, SMS, etc.) without explicit user confirmation:
   - Always show the full message text and ask: “I’m going to send this: <message>. Send? (y/n)”
 
-Moltbot packaging:
+Openclaw packaging:
 - The gateway package must include Control UI assets (run `pnpm ui:build` in the Nix build).
 
 Golden path for pins (yolo + manual bumps):
 - Hourly GitHub Action **Yolo Update Pins** runs `scripts/update-pins.sh`, which:
-  - Picks latest upstream moltbot SHA with green non-Windows checks
+  - Picks latest upstream openclaw SHA with green non-Windows checks
   - Rebuilds gateway to refresh `pnpmDepsHash`
-  - Regenerates `nix/generated/moltbot-config-options.nix` from upstream schema
+  - Regenerates `nix/generated/openclaw-config-options.nix` from upstream schema
   - Updates app pin/hash, commits, rebases, pushes to `main`
 - Manual bump (rare): `GH_TOKEN=... scripts/update-pins.sh` (same steps as above). Use only if yolo is blocked.
-- To verify freshness: `git pull --ff-only` and check `nix/sources/moltbot-source.nix` vs `git ls-remote https://github.com/moltbot/moltbot.git refs/heads/main`.
+- To verify freshness: `git pull --ff-only` and check `nix/sources/openclaw-source.nix` vs `git ls-remote https://github.com/openclaw/openclaw.git refs/heads/main`.
 - If upstream is moving fast and tighter freshness is needed, trigger yolo manually: `gh workflow run "Yolo Update Pins"`.
 
 Philosophy:
 
-The Zen of ~~Python~~ Moltbot, ~~by~~ shamelessly stolen from Tim Peters
+The Zen of ~~Python~~ Openclaw, ~~by~~ shamelessly stolen from Tim Peters
 
 Beautiful is better than ugly.  
 Explicit is better than implicit.  

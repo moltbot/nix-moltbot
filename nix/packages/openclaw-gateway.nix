@@ -38,7 +38,7 @@ let
 in
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "moltbot-gateway";
+  pname = "openclaw-gateway";
   version = "2026.1.8-2";
 
   src = if gatewaySrc != null then gatewaySrc else fetchFromGitHub sourceFetch;
@@ -92,10 +92,10 @@ stdenv.mkDerivation (finalAttrs: {
   dontPatchShebangs = true;
 
   meta = with lib; {
-    description = "Telegram-first AI gateway (Moltbot)";
-    homepage = "https://github.com/moltbot/moltbot";
+    description = "Telegram-first AI gateway (Openclaw)";
+    homepage = "https://github.com/openclaw/openclaw";
     license = licenses.mit;
     platforms = platforms.darwin ++ platforms.linux;
-    mainProgram = "moltbot";
+    mainProgram = "openclaw";
   };
 })

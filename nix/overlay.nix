@@ -9,7 +9,7 @@ let
     };
 in
 packages // {
-  moltbotPackages = packages // {
+  openclawPackages = packages // {
     inherit toolNames withTools;
   };
 }

@@ -1,17 +1,17 @@
-# Moltbot Plugin Architecture (Maintainer Memo)
+# Openclaw Plugin Architecture (Maintainer Memo)
 
-Purpose: extend Moltbot capabilities without bloating core; ship tools + skills + config as reproducible units you can pin, test, and roll back. nix-moltbot shows the contract; Moltbot core should treat the same interface as first-class, even off-Nix.
+Purpose: extend Openclaw capabilities without bloating core; ship tools + skills + config as reproducible units you can pin, test, and roll back. nix-openclaw shows the contract; Openclaw core should treat the same interface as first-class, even off-Nix.
 
 ## What a Plugin Is (and is not)
 - **Is:** bundle of binaries/CLIs, skills that teach the agent to use them, optional config/env requirements.
 - **Not:** new transports/providers; model plumbing; secrets baked in; inline scripts or ad-hoc package-manager installs; a place for random config outside its scope.
 - Why not skills-only: skills without binaries can hallucinate capability. Plugins ground skills in real tools and deliver versioned, reproducible functionality.
 
-## Interface Contract (reference implementation: nix-moltbot)
-Every plugin artifact exposes the same fields (flake output `moltbotPlugin` today, but the shape is host-agnostic):
+## Interface Contract (reference implementation: nix-openclaw)
+Every plugin artifact exposes the same fields (flake output `openclawPlugin` today, but the shape is host-agnostic):
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name        = "summarize";                # unique; last-wins on collision
   skills      = [ ./skills/summarize ];      # dirs containing SKILL.md
   packages    = [ pkgs.summarize-cli ];      # binaries placed on PATH
@@ -52,10 +52,10 @@ plugins = [
 - Invariant: providing `settings` requires at least one `stateDir`.
 
 ## Dev workflow (fast iteration)
-- Worktree: build and test plugins outside the core repo; point Moltbot at a local path source (e.g., `source = "path:/Users/you/code/my-plugin"`).
+- Worktree: build and test plugins outside the core repo; point Openclaw at a local path source (e.g., `source = "path:/Users/you/code/my-plugin"`).
 - Rebuild loop: change plugin → `home-manager switch` (or host-equivalent) → gateway restarts with new PATH/skills/config; no manual copying.
 - Name collisions: use the same plugin `name` to override a pinned version (last entry wins); keep unique names otherwise to avoid surprise overrides.
-- Skills placement: skills land under `~/.moltbot*/workspace/skills/<plugin>/...` so you can inspect quickly; delete the workspace to fully reset cached skills.
+- Skills placement: skills land under `~/.openclaw*/workspace/skills/<plugin>/...` so you can inspect quickly; delete the workspace to fully reset cached skills.
 - Env guardrails: required env vars must point to files (non-empty) or the activation fails—supply temp files during dev to exercise the checks.
 - Settings JSON: inspect the rendered `config.json` in the first `stateDir` to confirm schema and defaults before committing.
 
@@ -65,15 +65,15 @@ plugins = [
 Enable (host side):
 
 ```nix
-programs.moltbot.instances.default.plugins = [
-  { source = "github:moltbot/nix-steipete-tools?dir=tools/summarize"; }
+programs.openclaw.instances.default.plugins = [
+  { source = "github:openclaw/nix-steipete-tools?dir=tools/summarize"; }
 ];
 ```
 
 Plugin contract (inside the plugin repo):
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name = "summarize";
   skills = [ ./skills/summarize ];
   packages = [ self.packages.${system}.summarize-cli ];
@@ -85,7 +85,7 @@ moltbotPlugin = {
 Enable (host side):
 
 ```nix
-programs.moltbot.instances.default.plugins = [
+programs.openclaw.instances.default.plugins = [
   {
     source = "github:joshp123/xuezh";
     config = {
@@ -117,7 +117,7 @@ programs.moltbot.instances.default.plugins = [
 Plugin contract (inside `xuezh`):
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name = "xuezh";
   skills = [ ./skills/xuezh ];
   packages = [ self.packages.${system}.default ];
@@ -132,7 +132,7 @@ Host behavior: creates `~/.config/xuezh/config.json` from `settings`; exports bo
 
 ## First-Party Plugin Set (current)
 - summarize, peekaboo, oracle, poltergeist, sag, camsnap, gogcli, bird, sonoscli, imsg.
-- Each follows the same contract: packages + skills; env/state declared via `needs`; enabled via config toggle; sources pinned (see nix-moltbot firstParty mapping).
+- Each follows the same contract: packages + skills; env/state declared via `needs`; enabled via config toggle; sources pinned (see nix-openclaw firstParty mapping).
 
 ## Authoring Rules
 - Keep CLIs configurable via env; honor XDG paths; no inline scripts.
@@ -144,6 +144,6 @@ Host behavior: creates `~/.config/xuezh/config.json` from `settings`; exports bo
 ## Why this approach
 - Capability grounding: skills map to real tools, not hypothetical ones.
 - Reproducibility: versioned bundle of tool + skill + config schema; easy rollback.
-- Clean core: main Moltbot stays transport/model-focused; plugins carry integrations.
+- Clean core: main Openclaw stays transport/model-focused; plugins carry integrations.
 - Operational sanity: one toggle wires tools, env, skills; failure is explicit and early.
 - Portability: contract is host-agnostic; Nix just enforces determinism and zero drift.

@@ -1,8 +1,8 @@
-# RFC: Moltbot Plugin System — The Golden Path
+# RFC: Openclaw Plugin System — The Golden Path
 
 - Date: 2026-01-11
 - Status: Draft
-- Audience: Peter (moltbot maintainer), nix-moltbot maintainers
+- Audience: Peter (openclaw maintainer), nix-openclaw maintainers
 
 ## Goals
 
@@ -10,7 +10,7 @@
 
 **Our goals:** Properly bundled tools with reproducible builds, single-install experience, it Just Works.
 
-**This RFC argues:** The nix-moltbot plugin model achieves both. It should become the golden path for extending moltbot.
+**This RFC argues:** The nix-openclaw plugin model achieves both. It should become the golden path for extending openclaw.
 
 ---
 
@@ -18,8 +18,8 @@
 
 Voice-call landed in core (+8K LOC). It works, but:
 - Core now has Twilio/Telnyx deps even if you don't use voice-call
-- Changes to voice-call require moltbot releases
-- Testing voice-call means testing all of moltbot
+- Changes to voice-call require openclaw releases
+- Testing voice-call means testing all of openclaw
 - Contributors need to understand the whole codebase
 
 This pattern doesn't scale. Every new capability bloats core.
@@ -35,7 +35,7 @@ Skills without tools are hallucinations waiting to happen.
 
 ---
 
-## The nix-moltbot Model: Bundle Everything
+## The nix-openclaw Model: Bundle Everything
 
 A plugin is **just a GitHub repo** that self-declares its contract:
 
@@ -60,7 +60,7 @@ One install gives you:
 ### Real Example: xuezh (Chinese learning)
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name = "xuezh";
   skills = [ ./skills/xuezh ];
   packages = [ self.packages.${system}.default ];
@@ -85,7 +85,7 @@ moltbotPlugin = {
 ### Real Example: gohome (home automation)
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name = "gohome";
   skills = [ ./skills/gohome ];
   packages = [ self.packages.${system}.default ];
@@ -114,7 +114,7 @@ MEDIA:http://gohome:8080/roborock/map.png?labels=names
 ### Real Example: padel (court booking)
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name = "padel";
   skills = [ ./skills/padel ];
   packages = [ self.packages.${system}.default ];
@@ -152,7 +152,7 @@ Bundled plugin is "here's the tool, its docs, and everything it needs."
 |--------|---------|--------|
 | Core LOC | +8K per feature | Zero |
 | Dependencies | Everyone gets them | Only if you install |
-| Release cycle | Tied to moltbot | Independent |
+| Release cycle | Tied to openclaw | Independent |
 | Testing | Test everything | Test plugin only |
 | Contributor barrier | Understand whole codebase | Understand plugin only |
 
@@ -195,23 +195,23 @@ voicecall status --call-id abc123  # Check for responses
 
 ## The Proposal: Make This the Golden Path
 
-### What moltbot core should do
+### What openclaw core should do
 
 1. **Document the plugin contract** — `plugin.json` manifest schema (name, skills, bin, needs)
-2. **Add discovery** — scan `~/.moltbot/extensions/` at startup
+2. **Add discovery** — scan `~/.openclaw/extensions/` at startup
 3. **Validate env** — fail fast if `requiredEnv` missing
 4. **Create state dirs** — from manifest
-5. **Add `moltbot plugins` CLI** — list, enable, disable, info
+5. **Add `openclaw plugins` CLI** — list, enable, disable, info
 
 That's it. No dynamic code loading, no TypeBox registration, no RPC handlers. Just: find plugins, validate their needs, put binaries on PATH, copy skills to workspace.
 
-### How nix-moltbot fits in
+### How nix-openclaw fits in
 
-nix-moltbot is a **plugin installer** that wires plugins into moltbot's plugin system:
+nix-openclaw is a **plugin installer** that wires plugins into openclaw's plugin system:
 
 ```nix
 # User's flake.nix
-programs.moltbot.plugins = [
+programs.openclaw.plugins = [
   # Remote: point at GitHub repo
   { source = "github:joshp123/xuezh"; }
   { source = "github:joshp123/padel-cli"; }
@@ -220,35 +220,35 @@ programs.moltbot.plugins = [
   { source = "path:/Users/josh/code/my-plugin"; }
 ];
 
-# Or enable first-party plugins (pinned in nix-moltbot):
-programs.moltbot.firstParty.summarize.enable = true;
-programs.moltbot.firstParty.oracle.enable = true;
+# Or enable first-party plugins (pinned in nix-openclaw):
+programs.openclaw.firstParty.summarize.enable = true;
+programs.openclaw.firstParty.oracle.enable = true;
 ```
 
 **Same contract, multiple sources:**
 - `github:owner/repo` — pull from GitHub, pin to commit
 - `path:/local/dir` — local checkout for dev iteration
-- First-party toggles — curated plugins pinned in nix-moltbot
+- First-party toggles — curated plugins pinned in nix-openclaw
 
-At activation time, nix-moltbot:
+At activation time, nix-openclaw:
 1. Resolves flake sources (remote or local) → builds binaries
 2. Validates `requiredEnv` (fails if missing)
 3. Creates state dirs
-4. Installs plugins to `~/.moltbot/extensions/<plugin>/`
+4. Installs plugins to `~/.openclaw/extensions/<plugin>/`
 5. Writes `plugin.json` manifest for each
 6. Symlinks skills to workspace
 7. Adds binaries to PATH
 
-**moltbot core sees all plugins** — it scans `~/.moltbot/extensions/`, reads manifests, knows what's installed. The difference is nix-moltbot does the install + validation at build time (deterministic, fail-fast), while non-Nix users do it manually or via npm.
+**openclaw core sees all plugins** — it scans `~/.openclaw/extensions/`, reads manifests, knows what's installed. The difference is nix-openclaw does the install + validation at build time (deterministic, fail-fast), while non-Nix users do it manually or via npm.
 
 **Same plugin system, different installers:**
-- Nix users: nix-moltbot installs plugins declaratively
-- Non-Nix users: `moltbot plugins install` or manual setup
-- moltbot core: sees the same `~/.moltbot/extensions/` structure either way
+- Nix users: nix-openclaw installs plugins declaratively
+- Non-Nix users: `openclaw plugins install` or manual setup
+- openclaw core: sees the same `~/.openclaw/extensions/` structure either way
 
-**Local dev workflow:** Point at a local path, change code, rebuild, gateway picks up changes. No push/pull cycle. Same contract, local iteration. For non-Nix: symlink your plugin dir into `~/.moltbot/extensions/`.
+**Local dev workflow:** Point at a local path, change code, rebuild, gateway picks up changes. No push/pull cycle. Same contract, local iteration. For non-Nix: symlink your plugin dir into `~/.openclaw/extensions/`.
 
-### What nix-moltbot provides (golden path)
+### What nix-openclaw provides (golden path)
 
 - **Reproducible builds** — binary built from source, same everywhere
 - **Version pinning** — plugin source locked to exact commit
@@ -258,7 +258,7 @@ At activation time, nix-moltbot:
 
 ### What npm provides (fallback)
 
-- `moltbot plugins install @moltbot/voice-call` — npm install to extensions dir
+- `openclaw plugins install @openclaw/voice-call` — npm install to extensions dir
 - Manual env var setup
 - Manual version management
 - No reproducibility guarantees
@@ -280,12 +280,12 @@ voicecall expose --mode funnel|serve|off
 As a plugin:
 
 ```nix
-moltbotPlugin = {
+openclawPlugin = {
   name = "voice-call";
   skills = [ ./skills/voice-call ];
   packages = [ self.packages.${system}.default ];
   needs = {
-    stateDirs = [ ".config/moltbot-voice-call" ];
+    stateDirs = [ ".config/openclaw-voice-call" ];
     requiredEnv = [ "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN" ];
   };
 };
@@ -294,7 +294,7 @@ moltbotPlugin = {
 Install wires up Twilio creds. Binary handles webhook server. Skill teaches agent the CLI. Done.
 
 **Migration path:**
-1. Create `@moltbot/voice-call` repo
+1. Create `@openclaw/voice-call` repo
 2. Move code from core
 3. Add plugin contract
 4. Remove from core
@@ -304,7 +304,7 @@ Install wires up Twilio creds. Binary handles webhook server. Skill teaches agen
 
 ## The Plugin Ecosystem Vision
 
-**First-party plugins** already exist — see [nix-steipete-tools](https://github.com/moltbot/nix-steipete-tools/tree/main/tools):
+**First-party plugins** already exist — see [nix-steipete-tools](https://github.com/openclaw/nix-steipete-tools/tree/main/tools):
 - `summarize` — YouTube/article summarization
 - `oracle` — second-model review
 - `peekaboo` — screenshot capture
@@ -316,13 +316,13 @@ Install wires up Twilio creds. Binary handles webhook server. Skill teaches agen
 - `imsg` — iMessage integration
 - `gogcli` — Google Calendar
 
-All follow the same contract. All pinned in nix-moltbot. Enable with one line:
+All follow the same contract. All pinned in nix-openclaw. Enable with one line:
 ```nix
-programs.moltbot.firstParty.summarize.enable = true;
+programs.openclaw.firstParty.summarize.enable = true;
 ```
 
 **Community plugins** (anyone can ship):
-- Just a GitHub repo with `flake.nix` + `moltbotPlugin`
+- Just a GitHub repo with `flake.nix` + `openclawPlugin`
 - No registry, no approval process
 - User points at repo, wires secrets, it works
 
@@ -346,10 +346,10 @@ programs.moltbot.firstParty.summarize.enable = true;
 
 **The pitch to Peter:**
 
-Your voice-call is great. But it shouldn't live in core forever. The nix-moltbot plugin model lets you:
+Your voice-call is great. But it shouldn't live in core forever. The nix-openclaw plugin model lets you:
 - Ship it independently (faster iteration)
 - Keep core lean (easier maintenance)
-- Let community extend moltbot (ecosystem growth)
+- Let community extend openclaw (ecosystem growth)
 - Guarantee it works when installed (fail-fast validation)
 
 All you need to add to core is plugin discovery + env validation. We already have the contract, the tooling, and real plugins in production.
@@ -359,28 +359,28 @@ All you need to add to core is plugin discovery + env validation. We already hav
 ## Open Questions
 
 1. **Manifest format:**
-   - Nix users: `moltbotPlugin` in `flake.nix` (already works)
+   - Nix users: `openclawPlugin` in `flake.nix` (already works)
    - Non-Nix users: `plugin.json` in plugin directory
-   - **Suggested:** moltbot core defines `plugin.json` schema. Same fields as `moltbotPlugin`:
+   - **Suggested:** openclaw core defines `plugin.json` schema. Same fields as `openclawPlugin`:
      ```json
      {
        "name": "voice-call",
        "skills": ["./skills/voice-call"],
        "bin": { "voicecall": "./bin/voicecall" },
        "needs": {
-         "stateDirs": [".config/moltbot-voice-call"],
+         "stateDirs": [".config/openclaw-voice-call"],
          "requiredEnv": ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"]
        }
      }
      ```
 
 2. **Discovery paths:**
-   - **Suggested:** `~/.moltbot/extensions/<plugin>/` for user-installed, `.moltbot/extensions/<plugin>/` for project-local
-   - moltbot core scans both paths at startup
-   - nix-moltbot installs to the same paths — same structure, different installer
+   - **Suggested:** `~/.openclaw/extensions/<plugin>/` for user-installed, `.openclaw/extensions/<plugin>/` for project-local
+   - openclaw core scans both paths at startup
+   - nix-openclaw installs to the same paths — same structure, different installer
 
 3. **First-party plugins for non-Nix:**
-   - **Suggested:** `@moltbot/` npm scope, but don't invest heavily. Point people to Nix.
+   - **Suggested:** `@openclaw/` npm scope, but don't invest heavily. Point people to Nix.
 
 4. **Voice-call extraction:** Want to do this now, or later?
 

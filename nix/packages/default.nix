@@ -1,5 +1,5 @@
 { pkgs
-, sourceInfo ? import ../sources/moltbot-source.nix
+, sourceInfo ? import ../sources/openclaw-source.nix
 , steipetePkgs ? {}
 , toolNamesOverride ? null
 , excludeToolNames ? []
@@ -11,23 +11,23 @@ let
     steipetePkgs = steipetePkgs;
     inherit toolNamesOverride excludeToolNames;
   };
-  moltbotGateway = pkgs.callPackage ./moltbot-gateway.nix {
+  openclawGateway = pkgs.callPackage ./openclaw-gateway.nix {
     inherit sourceInfo;
     pnpmDepsHash = sourceInfo.pnpmDepsHash or null;
   };
-  moltbotApp = if isDarwin then pkgs.callPackage ./moltbot-app.nix { } else null;
-  moltbotTools = pkgs.buildEnv {
-    name = "moltbot-tools";
+  openclawApp = if isDarwin then pkgs.callPackage ./openclaw-app.nix { } else null;
+  openclawTools = pkgs.buildEnv {
+    name = "openclaw-tools";
     paths = toolSets.tools;
     pathsToLink = [ "/bin" ];
   };
-  moltbotBundle = pkgs.callPackage ./moltbot-batteries.nix {
-    moltbot-gateway = moltbotGateway;
-    moltbot-app = moltbotApp;
+  openclawBundle = pkgs.callPackage ./openclaw-batteries.nix {
+    openclaw-gateway = openclawGateway;
+    openclaw-app = openclawApp;
     extendedTools = toolSets.tools;
   };
 in {
-  moltbot-gateway = moltbotGateway;
-  moltbot = moltbotBundle;
-  moltbot-tools = moltbotTools;
-} // (if isDarwin then { moltbot-app = moltbotApp; } else {})
+  openclaw-gateway = openclawGateway;
+  openclaw = openclawBundle;
+  openclaw-tools = openclawTools;
+} // (if isDarwin then { openclaw-app = openclawApp; } else {})

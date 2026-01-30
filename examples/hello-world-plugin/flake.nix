@@ -1,5 +1,5 @@
 {
-  description = "Hello-world Moltbot plugin";
+  description = "Hello-world Openclaw plugin";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -22,7 +22,7 @@
           drv = self.packages.${system}.default;
         };
 
-        moltbotPlugin = {
+        openclawPlugin = {
           name = "hello-world";
           skills = [ ./skills/hello-world ];
           packages = [ self.packages.${system}.default ];

@@ -4,10 +4,12 @@
 , fetchurl
 , nodejs_22
 , pnpm_10
+, bun
 , pkg-config
 , jq
 , python3
 , node-gyp
+, vips
 , git
 , zstd
 , sourceInfo
@@ -29,11 +31,10 @@ let
     dontBuild = true;
     installPhase = "${../scripts/node-addon-api-install.sh}";
   };
-
 in
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "moltbot-config-options";
+  pname = "openclaw-gateway-tests";
   version = "2026.1.8-2";
 
   src = fetchFromGitHub sourceFetch;
@@ -52,6 +53,7 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     nodejs_22
     pnpm_10
+    bun
     pkg-config
     jq
     python3
@@ -59,7 +61,10 @@ stdenv.mkDerivation (finalAttrs: {
     zstd
   ];
 
+  buildInputs = [ vips ];
+
   env = {
+    SHARP_IGNORE_GLOBAL_LIBVIPS = "1";
     npm_config_arch = pnpmArch;
     npm_config_platform = pnpmPlatform;
     PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS = "false";
@@ -72,16 +77,13 @@ stdenv.mkDerivation (finalAttrs: {
     PROMOTE_PNPM_INTEGRITY_SH = "${../scripts/promote-pnpm-integrity.sh}";
     REMOVE_PACKAGE_MANAGER_FIELD_SH = "${../scripts/remove-package-manager-field.sh}";
     STDENV_SETUP = "${stdenv}/setup";
-    CONFIG_OPTIONS_GENERATOR = "${../scripts/generate-config-options.ts}";
-    CONFIG_OPTIONS_GOLDEN = "${../generated/moltbot-config-options.nix}";
-    NODE_ENGINE_CHECK = "${../scripts/check-node-engine.ts}";
   };
 
-  buildPhase = "${../scripts/gateway-tests-build.sh}";
   postPatch = "${../scripts/gateway-postpatch.sh}";
+  buildPhase = "${../scripts/gateway-tests-build.sh}";
 
   doCheck = true;
-  checkPhase = "${../scripts/config-options-check.sh}";
+  checkPhase = "${../scripts/gateway-tests-check.sh}";
 
   installPhase = "${../scripts/empty-install.sh}";
   dontPatchShebangs = true;

@@ -1,4 +1,4 @@
-# AGENTS.md — Moltbot Workspace
+# AGENTS.md — Openclaw Workspace
 
 This file is managed by Nix. Update it in the repo, not in the workspace.
 

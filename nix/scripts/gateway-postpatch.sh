@@ -5,8 +5,8 @@ if [ -f package.json ]; then
 fi
 
 if [ -f src/logging.ts ]; then
-  if ! grep -q "MOLTBOT_LOG_DIR" src/logging.ts; then
-    sed -i 's/export const DEFAULT_LOG_DIR = "\/tmp\/moltbot";/export const DEFAULT_LOG_DIR = process.env.MOLTBOT_LOG_DIR ?? "\/tmp\/moltbot";/' src/logging.ts
+  if ! grep -q "OPENCLAW_LOG_DIR" src/logging.ts; then
+    sed -i 's/export const DEFAULT_LOG_DIR = "\/tmp\/moltbot";/export const DEFAULT_LOG_DIR = process.env.OPENCLAW_LOG_DIR ?? "\/tmp\/moltbot";/' src/logging.ts
   fi
 fi
 

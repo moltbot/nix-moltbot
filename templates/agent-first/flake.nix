@@ -1,24 +1,24 @@
 {
-  description = "Moltbot local";
+  description = "Openclaw local";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    nix-moltbot.url = "github:moltbot/nix-moltbot";
+    nix-openclaw.url = "github:openclaw/nix-openclaw";
   };
 
-  outputs = { self, nixpkgs, home-manager, nix-moltbot }:
+  outputs = { self, nixpkgs, home-manager, nix-openclaw }:
     let
       # REPLACE: aarch64-darwin (Apple Silicon), x86_64-darwin (Intel), or x86_64-linux
       system = "<system>";
-      pkgs = import nixpkgs { inherit system; overlays = [ nix-moltbot.overlays.default ]; };
+      pkgs = import nixpkgs { inherit system; overlays = [ nix-openclaw.overlays.default ]; };
     in {
       # REPLACE: <user> with your username (run `whoami`)
       homeConfigurations."<user>" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         modules = [
-          nix-moltbot.homeManagerModules.moltbot
+          nix-openclaw.homeManagerModules.openclaw
           {
             # Required for Home Manager standalone
             home.username = "<user>";
@@ -27,7 +27,7 @@
             home.stateVersion = "24.11";
             programs.home-manager.enable = true;
 
-            programs.moltbot = {
+            programs.openclaw = {
               # REPLACE: path to your managed documents directory
               documents = ./documents;
               instances.default = {
