@@ -74,6 +74,7 @@ stdenv.mkDerivation (finalAttrs: {
     STDENV_SETUP = "${stdenv}/setup";
     CONFIG_OPTIONS_GENERATOR = "${../scripts/generate-config-options.ts}";
     CONFIG_OPTIONS_GOLDEN = "${../generated/openclaw-config-options.nix}";
+    CONFIG_METADATA_GOLDEN = "${../generated/openclaw-config-metadata.json}";
     NODE_ENGINE_CHECK = "${../scripts/check-node-engine.ts}";
   };
 

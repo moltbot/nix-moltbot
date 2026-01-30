@@ -238,7 +238,7 @@ if git diff --quiet; then
 fi
 
 log "Committing updated pins"
-git add "$source_file" "$app_file" "$repo_root/nix/generated/openclaw-config-options.nix" "$repo_root/flake.lock"
+git add "$source_file" "$app_file" "$repo_root/nix/generated/openclaw-config-options.nix" "$repo_root/nix/generated/openclaw-config-metadata.json" "$repo_root/flake.lock"
 git commit -F - <<'EOF'
 🤖 codex: bump openclaw pins (no-issue)
 

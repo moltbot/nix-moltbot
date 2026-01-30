@@ -54,3 +54,17 @@ output_path="./generated-config-options.nix"
 ./node_modules/.bin/tsx ./generate-config-options.ts --repo . --out "$output_path"
 
 diff -u "$CONFIG_OPTIONS_GOLDEN" "$output_path"
+
+metadata_path="./openclaw-config-metadata.json"
+
+if [ ! -f "$metadata_path" ]; then
+  echo "Metadata file not generated: $metadata_path" >&2
+  exit 1
+fi
+
+if [ -z "${CONFIG_METADATA_GOLDEN:-}" ]; then
+  echo "CONFIG_METADATA_GOLDEN is not set" >&2
+  exit 1
+fi
+
+diff -u "$CONFIG_METADATA_GOLDEN" "$metadata_path"

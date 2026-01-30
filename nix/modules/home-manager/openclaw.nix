@@ -16,7 +16,68 @@ let
     then (pkgs.openclawPackages.withTools toolOverrides).openclaw
     else cfg.package;
   appPackage = if cfg.appPackage != null then cfg.appPackage else defaultPackage;
-  generatedConfigOptions = import ../../generated/openclaw-config-options.nix { lib = lib; };
+  schemaMeta = builtins.fromJSON (builtins.readFile ../../generated/openclaw-config-metadata.json);
+
+  validateType = path: value:
+    let
+      typeMeta = schemaMeta.types.${path} or null;
+    in
+    if typeMeta == null then true
+    else if typeMeta.type == "enum" then builtins.elem value (typeMeta.values or [])
+    else if typeMeta.type == "string" then builtins.isString value
+    else if typeMeta.type == "integer" then builtins.isInt value
+    else if typeMeta.type == "number" then builtins.isInt value || builtins.isFloat value
+    else if typeMeta.type == "boolean" then builtins.isBool value
+    else if typeMeta.type == "array" then builtins.isList value
+    else if typeMeta.type == "object" then builtins.isAttrs value
+    else if typeMeta.type == "oneOf" then
+      builtins.any (alt:
+        if alt.type == "enum" then builtins.elem value (alt.values or [])
+        else if alt.type == "string" then builtins.isString value
+        else if alt.type == "integer" then builtins.isInt value
+        else if alt.type == "boolean" then builtins.isBool value
+        else true
+      ) (typeMeta.alternatives or [])
+    else if typeMeta.type == "nullable" then
+      value == null || builtins.any (alt: validateType path value) (typeMeta.alternatives or [])
+    else true;
+
+  describeType = path:
+    let typeMeta = schemaMeta.types.${path} or null;
+    in
+    if typeMeta == null then "unknown"
+    else if typeMeta.type == "enum" then "one of [${lib.concatStringsSep " " (map toString (typeMeta.values or []))}]"
+    else typeMeta.type;
+
+  isDynamicPath = path:
+    builtins.any (dp:
+      let parts = lib.splitString "." dp;
+          pathParts = lib.splitString "." path;
+      in lib.length pathParts >= lib.length parts
+         && builtins.elem dp schemaMeta.dynamicKeys
+    ) schemaMeta.dynamicKeys
+    || builtins.any (dp: lib.hasPrefix dp path) (map (dk: dk + ".") schemaMeta.dynamicKeys);
+
+  validateConfigAttrs = prefix: attrs:
+    lib.concatMap (key:
+      let
+        fullPath = if prefix == "" then key else "${prefix}.${key}";
+        validKeys = schemaMeta.validPaths.${prefix} or null;
+        value = attrs.${key};
+        keyIsValid = validKeys == null || isDynamicPath prefix || builtins.elem key validKeys;
+      in
+      (lib.optional (!keyIsValid) {
+        assertion = false;
+        message = "configOverrides: unrecognized key '${fullPath}'."
+          + " Valid keys at '${prefix}': ${toString validKeys}";
+      })
+      ++ (lib.optional (keyIsValid && !(builtins.isAttrs value) && !(validateType fullPath value)) {
+        assertion = false;
+        message = "configOverrides: invalid value at '${fullPath}'."
+          + " Expected ${describeType fullPath}, got ${builtins.typeOf value}";
+      })
+      ++ (lib.optionals (builtins.isAttrs value) (validateConfigAttrs fullPath value))
+    ) (builtins.attrNames attrs);
 
   mkBaseConfig = workspaceDir: inst: {
     gateway = { mode = "local"; };
@@ -35,14 +96,13 @@ let
     };
   };
 
-  mkTelegramConfig = inst: lib.optionalAttrs inst.providers.telegram.enable {
-    telegram = {
-      enabled = true;
-      tokenFile = inst.providers.telegram.botTokenFile;
-      allowFrom = inst.providers.telegram.allowFrom;
-      groups = inst.providers.telegram.groups;
-    };
-  };
+  mkChannelConfigs = inst:
+    lib.foldlAttrs (acc: name: ch:
+      lib.recursiveUpdate acc (lib.optionalAttrs ch.enable {
+        channels.${name}.accounts.${ch.accountName} =
+          { enabled = true; } // ch.config;
+      })
+    ) {} inst.providers.channels;
 
   mkRoutingConfig = inst: {
     messages = {
@@ -165,6 +225,35 @@ let
         };
       };
 
+      providers.channels = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.submodule {
+          options = {
+            enable = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Enable this channel.";
+            };
+            accountName = lib.mkOption {
+              type = lib.types.str;
+              default = "default";
+              description = "Account name under channels.<channel>.accounts.";
+            };
+            tokenFiles = lib.mkOption {
+              type = lib.types.attrsOf lib.types.str;
+              default = {};
+              description = "Env var name -> file path. Read at runtime, exported in gateway wrapper.";
+            };
+            config = lib.mkOption {
+              type = lib.types.attrs;
+              default = {};
+              description = "Channel config merged into channels.<name>.accounts.<accountName>.";
+            };
+          };
+        });
+        default = {};
+        description = "Channel providers (telegram, discord, slack, etc).";
+      };
+
       plugins = lib.mkOption {
         type = lib.types.listOf (lib.types.submodule {
           options = {
@@ -198,7 +287,7 @@ let
           description = "Default model for this instance (provider/model). Maps to agent.model.primary.";
         };
         thinkingDefault = lib.mkOption {
-          type = lib.types.enum [ "off" "minimal" "low" "medium" "high" ];
+          type = lib.types.enum schemaMeta.types."agents.defaults.thinkingDefault".values;
           default = cfg.defaults.thinkingDefault;
           description = "Default thinking level for this instance (\"max\" maps to \"high\").";
         };
@@ -206,7 +295,7 @@ let
 
       routing.queue = {
         mode = lib.mkOption {
-          type = lib.types.enum [ "queue" "interrupt" ];
+          type = lib.types.enum schemaMeta.types."messages.queue.mode".values;
           default = "interrupt";
           description = "Queue mode when a run is active.";
         };
@@ -222,7 +311,7 @@ let
         };
       };
 
-      
+
 
       launchd.enable = lib.mkOption {
         type = lib.types.bool;
@@ -284,11 +373,6 @@ let
         description = "Additional Openclaw config to merge into the generated JSON.";
       };
 
-      config = lib.mkOption {
-        type = lib.types.submodule { options = generatedConfigOptions; };
-        default = {};
-        description = "Upstream Openclaw config (generated from schema).";
-      };
     };
   };
 
@@ -306,7 +390,6 @@ let
     systemd = cfg.systemd;
     plugins = cfg.plugins;
     configOverrides = {};
-    config = {};
     appDefaults = {
       enable = true;
       attachExistingOnly = true;
@@ -316,6 +399,29 @@ let
         enable = false;
         path = "${homeDir}/Applications/Openclaw.app";
       };
+    };
+  };
+
+  telegramToChannel = inst:
+    lib.optionalAttrs inst.providers.telegram.enable {
+      channels.telegram = {
+        enable = true;
+        tokenFiles = lib.optionalAttrs (inst.providers.telegram.botTokenFile != "") {
+          TELEGRAM_BOT_TOKEN = inst.providers.telegram.botTokenFile;
+        };
+        config = {
+          allowFrom = inst.providers.telegram.allowFrom;
+        } // lib.optionalAttrs (inst.providers.telegram.groups != {}) {
+          groups = inst.providers.telegram.groups;
+        };
+      };
+    };
+
+  mergeChannels = inst: inst // {
+    providers = inst.providers // {
+      channels = lib.recursiveUpdate
+        (telegramToChannel inst)
+        inst.providers.channels;
     };
   };
 
@@ -723,7 +829,14 @@ let
           message = "Duplicate skill paths detected: ${lib.concatStringsSep ", " duplicates}";
         }
       ];
-  mkInstanceConfig = name: inst: let
+  channelTokenEntries = inst:
+    lib.concatMap (ch:
+      lib.mapAttrsToList (envVar: filePath: { key = envVar; value = filePath; })
+        ch.tokenFiles
+    ) (lib.filter (ch: ch.enable) (lib.attrValues inst.providers.channels));
+
+  mkInstanceConfig = name: rawInst: let
+    inst = mergeChannels rawInst;
     gatewayPackage =
       if inst.gatewayPath != null then
         pkgs.callPackage ../../packages/openclaw-gateway.nix {
@@ -739,7 +852,7 @@ let
     pluginEnvAll = pluginEnvAllFor name;
     baseConfig = mkBaseConfig inst.workspaceDir inst;
     mergedConfig = lib.recursiveUpdate
-      (lib.recursiveUpdate baseConfig (lib.recursiveUpdate (mkTelegramConfig inst) (mkRoutingConfig inst)))
+      (lib.recursiveUpdate baseConfig (lib.recursiveUpdate (mkChannelConfigs inst) (mkRoutingConfig inst)))
       inst.configOverrides;
     configJson = builtins.toJSON mergedConfig;
     configFile = pkgs.writeText "openclaw-${name}.json" configJson;
@@ -765,6 +878,20 @@ let
         export ANTHROPIC_API_KEY
       fi
 
+      ${lib.concatStringsSep "\n" (map (entry: ''
+      if [ -n "${entry.value}" ]; then
+        if [ ! -f "${entry.value}" ]; then
+          echo "Token file not found: ${entry.value}" >&2
+          exit 1
+        fi
+        ${entry.key}="$(cat "${entry.value}")"
+        if [ -z "''$${entry.key}" ]; then
+          echo "Token file is empty: ${entry.value}" >&2
+          exit 1
+        fi
+        export ${entry.key}
+      fi
+      '') (channelTokenEntries inst))}
       exec "${gatewayPackage}/bin/openclaw" "$@"
     '';
   in {
@@ -873,7 +1000,24 @@ let
       assertion = !inst.providers.telegram.enable || (lib.length inst.providers.telegram.allowFrom > 0);
       message = "programs.openclaw.instances.${name}.providers.telegram.allowFrom must be non-empty when Telegram is enabled.";
     }
-  ]) enabledInstances);
+  ] ++ (validateConfigAttrs "" inst.configOverrides)
+  ++ (lib.concatMap (chName:
+    let
+      ch = inst.providers.channels.${chName};
+    in lib.optionals ch.enable (
+      (lib.optional (!builtins.elem chName (schemaMeta.knownChannels or [])) {
+        assertion = false;
+        message = "providers.channels.${chName}: unknown channel."
+          + " Known channels: ${toString (schemaMeta.knownChannels or [])}";
+      })
+      ++ (validateConfigAttrs
+        (if schemaMeta.validPaths ? "channels.${chName}.accounts.*"
+         then "channels.${chName}.accounts.*"
+         else "channels.*.accounts.*")
+        ch.config)
+    )
+  ) (builtins.attrNames inst.providers.channels))
+  ) enabledInstances);
 
 in {
   options.programs.openclaw = {
@@ -995,7 +1139,7 @@ in {
         description = "Default model for all instances (provider/model). Slower and more expensive than smaller models.";
       };
       thinkingDefault = lib.mkOption {
-        type = lib.types.enum [ "off" "minimal" "low" "medium" "high" ];
+        type = lib.types.enum schemaMeta.types."agents.defaults.thinkingDefault".values;
         default = "high";
         description = "Default thinking level for all instances (\"max\" maps to \"high\").";
       };
@@ -1073,7 +1217,40 @@ in {
         description = "Allowed Telegram chat IDs.";
       };
 
-      
+      groups = lib.mkOption {
+        type = lib.types.attrs;
+        default = {};
+        description = "Per-group Telegram overrides (mirrors upstream telegram.groups config).";
+      };
+    };
+
+    providers.channels = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Enable this channel.";
+          };
+          accountName = lib.mkOption {
+            type = lib.types.str;
+            default = "default";
+            description = "Account name under channels.<channel>.accounts.";
+          };
+          tokenFiles = lib.mkOption {
+            type = lib.types.attrsOf lib.types.str;
+            default = {};
+            description = "Env var name -> file path. Read at runtime, exported in gateway wrapper.";
+          };
+          config = lib.mkOption {
+            type = lib.types.attrs;
+            default = {};
+            description = "Channel config merged into channels.<name>.accounts.<accountName>.";
+          };
+        };
+      });
+      default = {};
+      description = "Channel providers (telegram, discord, slack, etc).";
     };
 
     providers.anthropic = {
@@ -1086,7 +1263,7 @@ in {
 
     routing.queue = {
       mode = lib.mkOption {
-        type = lib.types.enum [ "queue" "interrupt" ];
+        type = lib.types.enum schemaMeta.types."messages.queue.mode".values;
         default = "interrupt";
         description = "Queue mode when a run is active.";
       };
@@ -1135,11 +1312,6 @@ in {
       };
     };
 
-    config = lib.mkOption {
-      type = lib.types.submodule { options = generatedConfigOptions; };
-      default = {};
-      description = "Upstream Openclaw config (generated from schema).";
-    };
   };
 
   config = lib.mkIf (cfg.enable || cfg.instances != {}) {
