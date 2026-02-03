@@ -156,7 +156,7 @@ in {
       };
       goplaces.enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
+        default = pkgs.stdenv.hostPlatform.isDarwin;
         description = "Enable the goplaces plugin (first-party).";
       };
       bird.enable = lib.mkOption {
