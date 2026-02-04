@@ -31,29 +31,23 @@
               # REPLACE: path to your managed documents directory
               documents = ./documents;
 
-              # Schema-typed Openclaw config (from upstream)
-              config = {
-                gateway = {
-                  mode = "local";
-                  auth = {
-                    # REPLACE: long random token for gateway auth
-                    token = "<gatewayToken>";
-                  };
-                };
-
-                channels.telegram = {
-                  # REPLACE: path to your bot token file
-                  tokenFile = "<tokenPath>";
-                  # REPLACE: your Telegram user ID (get from @userinfobot)
-                  allowFrom = [ <allowFrom> ];
-                  groups = {
-                    "*" = { requireMention = true; };
-                  };
-                };
+              # Matrix is enabled by default (replaces Telegram)
+              matrix = {
+                enable = true;
+                # REPLACE: Your Matrix homeserver URL (default uses https://matrix.aboutco.ai/)
+                homeserverUrl = "https://matrix.aboutco.ai/";
+                # REPLACE: Your Matrix bot user ID (e.g., @mybot:aboutco.ai)
+                userId = "<matrixUserId>";
+                # REPLACE: Path to file containing Matrix access token
+                # Get token via: curl -X POST https://matrix.aboutco.ai/_matrix/client/v3/login \
+                #   -H 'Content-Type: application/json' \
+                #   -d '{"type":"m.login.password","identifier":{"type":"m.id.user","user":"USERNAME"},"password":"PASSWORD"}'
+                accessTokenFile = "<accessTokenPath>";
               };
 
               instances.default = {
                 enable = true;
+                # Note: The @openclaw/matrix plugin is loaded automatically when Matrix is enabled
                 plugins = [
                   # Example plugin without config:
                   { source = "github:acme/hello-world"; }
