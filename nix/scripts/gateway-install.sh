@@ -25,6 +25,14 @@ bash -e -c '. "$STDENV_SETUP"; patchShebangs "$out/lib/openclaw/node_modules/.bi
 if [ -d "$out/lib/openclaw/ui/node_modules/.bin" ]; then
   bash -e -c '. "$STDENV_SETUP"; patchShebangs "$out/lib/openclaw/ui/node_modules/.bin"'
 fi
+# Patch shebangs in extensions node_modules if present
+if [ -d "$out/lib/openclaw/extensions" ]; then
+  for ext_bin in "$out/lib/openclaw/extensions"/*/node_modules/.bin; do
+    if [ -d "$ext_bin" ]; then
+      bash -e -c '. "$STDENV_SETUP"; patchShebangs "'"$ext_bin"'"'
+    fi
+  done
+fi
 
 # Work around missing dependency declaration in pi-coding-agent (strip-ansi).
 # Ensure it is resolvable at runtime without changing upstream.

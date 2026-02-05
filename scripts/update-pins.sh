@@ -145,6 +145,18 @@ if [[ -z "$release_tag" ]]; then
 fi
 log "Latest app release tag with asset: $release_tag"
 
+# Update version strings in gateway package and check derivations
+gateway_version="${release_tag#v}"
+log "Updating gateway version to: $gateway_version"
+
+gateway_file="$repo_root/nix/packages/openclaw-gateway.nix"
+tests_file="$repo_root/nix/checks/openclaw-gateway-tests.nix"
+options_file="$repo_root/nix/checks/openclaw-config-options.nix"
+
+perl -0pi -e "s|version = \"[^\"]+\";|version = \"${gateway_version}\";|" "$gateway_file"
+perl -0pi -e "s|version = \"[^\"]+\";|version = \"${gateway_version}\";|" "$tests_file"
+perl -0pi -e "s|version = \"[^\"]+\";|version = \"${gateway_version}\";|" "$options_file"
+
 app_url=$(printf '%s' "$release_json" | jq -r '[.[] | select([.assets[]?.name | (test("^Clawdbot-.*\\.zip$") and (test("dSYM") | not))] | any)][0].assets[] | select(.name | (test("^Clawdbot-.*\\.zip$") and (test("dSYM") | not))) | .browser_download_url' | head -n 1 || true)
 if [[ -z "$app_url" ]]; then
   echo "Failed to resolve Clawdbot app asset URL from latest release" >&2
@@ -238,7 +250,14 @@ if git diff --quiet; then
 fi
 
 log "Committing updated pins"
+<<<<<<< HEAD
 git add "$source_file" "$app_file" "$repo_root/nix/generated/openclaw-config-options.nix" "$repo_root/flake.lock"
+||||||| parent of 7fba1ec (ci: auto-update version strings in update-pins.sh)
+git add "$source_file" "$app_file" "$repo_root/nix/generated/moltbot-config-options.nix" "$repo_root/flake.lock"
+=======
+git add "$source_file" "$app_file" "$gateway_file" "$tests_file" "$options_file" \
+  "$repo_root/nix/generated/moltbot-config-options.nix" "$repo_root/flake.lock"
+>>>>>>> 7fba1ec (ci: auto-update version strings in update-pins.sh)
 git commit -F - <<'EOF'
 🤖 codex: bump openclaw pins (no-issue)
 
@@ -246,6 +265,7 @@ What:
 - pin openclaw source to latest upstream main
 - refresh macOS app pin to latest release asset
 - update source and app hashes
+- update version strings in gateway and check derivations
 - regenerate config options from upstream schema
 
 Why:
