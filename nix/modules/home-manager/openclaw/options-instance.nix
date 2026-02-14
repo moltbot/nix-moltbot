@@ -137,6 +137,12 @@
         default = true;
         description = "Attach existing gateway only (macOS).";
       };
+
+      nixMode = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable OpenClaw Nix mode in the macOS app via defaults (openclaw.nixMode).";
+      };
     };
   };
 }

@@ -16,6 +16,8 @@ If you’re **not listed as a maintainer** (see [AGENTS.md#maintainers](AGENTS.m
 
 ## Table of Contents
 
+- [Golden Paths](#golden-paths)
+
 - [Contributions (read this first)](#contributions-read-this-first)
 - [What You Get](#what-you-get)
 - [Requirements](#requirements)
@@ -28,6 +30,16 @@ If you’re **not listed as a maintainer** (see [AGENTS.md#maintainers](AGENTS.m
 - [Packaging & Updates](#packaging--updates)
 - [Reference](#reference)
 - [Philosophy](#philosophy)
+
+---
+
+## Golden Paths
+
+**There should be one — and preferably only one — obvious way to deploy.**
+
+Pick a Golden Path, then follow the docs:
+
+- [docs/golden-paths.md](docs/golden-paths.md)
 
 ---
 
@@ -432,7 +444,7 @@ Config flags the host will use:
 - `config.settings` for typed config keys (rendered to config.json in the first stateDir)
 
 CI note:
-- If the repo uses Garnix, add the plugin build to its `garnix.yaml` (or equivalent) so CI verifies it.
+- Make sure the plugin build is covered by CI (e.g. included in the repo's Nix build target list / cache-warming workflow).
 
 Why: explicit, minimal, fail-fast, no inline JSON strings.
 Deliverables: flake output, env overrides, AGENTS.md, skill update.
@@ -679,11 +691,24 @@ Pin lives in:
 ### Automated pipeline (no manual steps)
 
 1) **moltinators updater** proposes a new stable pin.  
-2) **Garnix** builds the package on Linux + macOS and runs `pnpm test` on Linux.  
+2) **GitHub Actions** builds the package on Linux + macOS and runs gateway tests on Linux.  
+   Build outputs are pushed to a binary cache (Cachix) so installs are fast and reproducible.  
    It also validates the generated Nix config options against the upstream schema.  
 3) **moltinators smoke test** runs against real Discord in `#moltinators-test`.  
 4) If green → promote to stable.  
 5) If red → keep current stable pin.
+
+---
+
+### CI & binary cache
+
+This repo uses GitHub Actions for CI. For fast installs, we push build outputs to a **Cachix** binary cache.
+
+Maintainers: configure these in GitHub repo settings (Actions):
+- Variable: `CACHIX_CACHE_NAME`
+- Secret: `CACHIX_AUTH_TOKEN`
+
+Users: run `cachix use <cache-name>` (or configure `substituters` + public key manually) to get cache hits.
 
 ---
 

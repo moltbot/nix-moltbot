@@ -1,12 +1,10 @@
 name: Cache Only
 
 on:
-  pull_request:
-  push:
-    branches: [ main ]
   workflow_run:
-    workflows: [ "Yolo Update Pins" ]
+    workflows: [ "Nix Build Cache" ]
     types: [ completed ]
+  workflow_dispatch: {}
 
 jobs:
   cache-only:
@@ -14,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TARGET_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME }}
+      WAIT_MINUTES: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,41 +23,23 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v13
 
-      - name: Wait for Garnix checks
-        uses: actions/github-script@v7
+      - name: Setup Cachix (read-only)
+        if: ${{ vars.CACHIX_CACHE_NAME != '' }}
+        uses: cachix/cachix-action@v15
         with:
-          script: |
-            const waitMinutes = 30
-            const intervalMs = 30_000
-            const deadline = Date.now() + waitMinutes * 60 * 1000
-            const targetSha = process.env.TARGET_SHA || context.sha
+          name: ${{ vars.CACHIX_CACHE_NAME }}
 
-            while (true) {
-              const { data } = await github.rest.checks.listForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: targetSha,
-              })
-              const garnix = data.check_runs.find((run) => run.name === 'All Garnix checks')
-              if (garnix && garnix.status === 'completed') {
-                if (garnix.conclusion !== 'success') {
-                  core.setFailed(`Garnix checks not successful: ${garnix.conclusion}`)
-                }
-                break
-              }
-              if (Date.now() > deadline) {
-                core.setFailed('Timed out waiting for Garnix checks')
-                break
-              }
-              await new Promise((resolve) => setTimeout(resolve, intervalMs))
-            }
-
-      - name: Verify cache.garnix.io has required outputs
-        env:
-          STORE_URL: https://cache.garnix.io
-          WAIT_MINUTES: 30
+      - name: Verify Cachix has required outputs
         run: |
           set -euo pipefail
+
+          if [ -z "${CACHIX_CACHE_NAME:-}" ]; then
+            echo "vars.CACHIX_CACHE_NAME not set; skipping cache verification."
+            exit 0
+          fi
+
+          STORE_URL="https://${CACHIX_CACHE_NAME}.cachix.org"
+          echo "Checking cache: ${STORE_URL}"
 
           targets=(
             packages.aarch64-darwin.openclaw

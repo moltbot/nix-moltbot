@@ -32,7 +32,10 @@ if (fs.existsSync(legacyValidationPath)) {
   for (const candidate of candidates) {
     const candidatePath = path.join(distDir, candidate);
     const contents = fs.readFileSync(candidatePath, "utf8");
-    if (!contents.includes("validateConfigObject")) {
+
+    // Newer gateway bundles often only export validateConfigObjectWithPlugins (aliased),
+    // while still containing an internal validateConfigObject function.
+    if (!contents.includes("validateConfigObject") && !contents.includes("validateConfigObjectWithPlugins")) {
       continue;
     }
 
@@ -41,12 +44,27 @@ if (fs.existsSync(legacyValidationPath)) {
     }
 
     const candidateModule = await import(pathToFileURL(candidatePath).href);
+
+    // Prefer the plain validator when exported.
     if (typeof candidateModule.validateConfigObject === "function") {
       validateConfigObject = candidateModule.validateConfigObject;
       break;
     }
 
-    const match = contents.match(/validateConfigObject as ([A-Za-z0-9_$]+)/);
+    // Fall back to the plugin-aware validator (what most bundles export today).
+    if (typeof candidateModule.validateConfigObjectWithPlugins === "function") {
+      validateConfigObject = candidateModule.validateConfigObjectWithPlugins;
+      break;
+    }
+
+    // Handle minified alias exports.
+    let match = contents.match(/validateConfigObject as ([A-Za-z0-9_$]+)/);
+    if (match && typeof candidateModule[match[1]] === "function") {
+      validateConfigObject = candidateModule[match[1]];
+      break;
+    }
+
+    match = contents.match(/validateConfigObjectWithPlugins as ([A-Za-z0-9_$]+)/);
     if (match && typeof candidateModule[match[1]] === "function") {
       validateConfigObject = candidateModule[match[1]];
       break;

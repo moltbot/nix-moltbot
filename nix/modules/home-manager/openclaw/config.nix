@@ -73,7 +73,13 @@ let
         inst.package;
     pluginPackages = plugins.pluginPackagesFor name;
     pluginEnvAll = plugins.pluginEnvAllFor name;
-    mergedConfig = stripNulls (lib.recursiveUpdate (lib.recursiveUpdate baseConfig cfg.config) inst.config);
+    mergedConfig0 = stripNulls (lib.recursiveUpdate (lib.recursiveUpdate baseConfig cfg.config) inst.config);
+    existingWorkspace = (((mergedConfig0.agents or {}).defaults or {}).workspace or null);
+    mergedConfig =
+      if (cfg.workspace.pinAgentDefaults or true) && existingWorkspace == null then
+        lib.recursiveUpdate mergedConfig0 { agents = { defaults = { workspace = inst.workspaceDir; }; }; }
+      else
+        mergedConfig0;
     configJson = builtins.toJSON mergedConfig;
     configFile = pkgs.writeText "openclaw-${name}.json" configJson;
     gatewayWrapper = pkgs.writeShellScriptBin "openclaw-gateway-${name}" ''
@@ -108,6 +114,7 @@ let
     appDefaults = lib.optionalAttrs (pkgs.stdenv.hostPlatform.isDarwin && inst.appDefaults.enable) {
       attachExistingOnly = inst.appDefaults.attachExistingOnly;
       gatewayPort = inst.gatewayPort;
+      nixMode = inst.appDefaults.nixMode;
     };
 
     appInstall = if !(pkgs.stdenv.hostPlatform.isDarwin && inst.app.install.enable && appPackage != null) then
@@ -250,8 +257,10 @@ in {
 
     home.activation.openclawAppDefaults = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && appDefaults != {}) (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        /usr/bin/defaults write com.steipete.Openclaw openclaw.gateway.attachExistingOnly -bool ${lib.boolToString (appDefaults.attachExistingOnly or true)}
-        /usr/bin/defaults write com.steipete.Openclaw gatewayPort -int ${toString (appDefaults.gatewayPort or 18789)}
+        # Nix mode + app defaults (OpenClaw.app)
+        /usr/bin/defaults write ai.openclaw.mac openclaw.nixMode -bool ${lib.boolToString (appDefaults.nixMode or true)}
+        /usr/bin/defaults write ai.openclaw.mac openclaw.gateway.attachExistingOnly -bool ${lib.boolToString (appDefaults.attachExistingOnly or true)}
+        /usr/bin/defaults write ai.openclaw.mac gatewayPort -int ${toString (appDefaults.gatewayPort or 18789)}
       ''
     );
 

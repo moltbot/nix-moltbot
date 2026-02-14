@@ -84,8 +84,16 @@ in {
 
     workspaceDir = lib.mkOption {
       type = lib.types.str;
-      default = "${openclawLib.homeDir}/.openclaw/workspace";
-      description = "Workspace directory for OpenClaw agent skills.";
+      default = "${config.programs.openclaw.stateDir}/workspace";
+      description = "Workspace directory for Openclaw agent skills (defaults to stateDir/workspace).";
+    };
+
+    workspace = {
+      pinAgentDefaults = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Pin agents.defaults.workspace to each instance workspaceDir when unset (prevents falling back to template ~/.openclaw/workspace).";
+      };
     };
 
     documents = lib.mkOption {
