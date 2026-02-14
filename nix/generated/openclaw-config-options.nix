@@ -2409,6 +2409,10 @@ in
           type = t.nullOr (t.bool);
           default = null;
         };
+        allowFrom = lib.mkOption {
+          type = t.nullOr (t.listOf (t.oneOf [ (t.str) (t.number) ]));
+          default = null;
+        };
         blockStreaming = lib.mkOption {
           type = t.nullOr (t.bool);
           default = null;
@@ -2482,6 +2486,10 @@ in
         };
         dmHistoryLimit = lib.mkOption {
           type = t.nullOr (t.int);
+          default = null;
+        };
+        dmPolicy = lib.mkOption {
+          type = t.nullOr (t.enum [ "pairing" "allowlist" "open" "disabled" ]);
           default = null;
         };
         dms = lib.mkOption {
@@ -2877,6 +2885,10 @@ in
         type = t.nullOr (t.bool);
         default = null;
       };
+      allowFrom = lib.mkOption {
+        type = t.nullOr (t.listOf (t.oneOf [ (t.str) (t.number) ]));
+        default = null;
+      };
       blockStreaming = lib.mkOption {
         type = t.nullOr (t.bool);
         default = null;
@@ -2950,6 +2962,10 @@ in
       };
       dmHistoryLimit = lib.mkOption {
         type = t.nullOr (t.int);
+        default = null;
+      };
+      dmPolicy = lib.mkOption {
+        type = t.nullOr (t.enum [ "pairing" "allowlist" "open" "disabled" ]);
         default = null;
       };
       dms = lib.mkOption {
@@ -5123,6 +5139,10 @@ in
           type = t.nullOr (t.bool);
           default = null;
         };
+        allowFrom = lib.mkOption {
+          type = t.nullOr (t.listOf (t.oneOf [ (t.str) (t.number) ]));
+          default = null;
+        };
         appToken = lib.mkOption {
           type = t.nullOr (t.str);
           default = null;
@@ -5275,6 +5295,10 @@ in
         };
         dmHistoryLimit = lib.mkOption {
           type = t.nullOr (t.int);
+          default = null;
+        };
+        dmPolicy = lib.mkOption {
+          type = t.nullOr (t.enum [ "pairing" "allowlist" "open" "disabled" ]);
           default = null;
         };
         dms = lib.mkOption {
@@ -5475,6 +5499,10 @@ in
         type = t.nullOr (t.bool);
         default = null;
       };
+      allowFrom = lib.mkOption {
+        type = t.nullOr (t.listOf (t.oneOf [ (t.str) (t.number) ]));
+        default = null;
+      };
       appToken = lib.mkOption {
         type = t.nullOr (t.str);
         default = null;
@@ -5627,6 +5655,10 @@ in
       };
       dmHistoryLimit = lib.mkOption {
         type = t.nullOr (t.int);
+        default = null;
+      };
+      dmPolicy = lib.mkOption {
+        type = t.nullOr (t.enum [ "pairing" "allowlist" "open" "disabled" ]);
         default = null;
       };
       dms = lib.mkOption {
