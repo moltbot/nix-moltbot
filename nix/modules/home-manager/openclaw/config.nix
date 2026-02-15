@@ -132,7 +132,7 @@ let
   in {
     homeFile = {
       name = openclawLib.toRelative inst.configPath;
-      value = { text = configJson; };
+      value = { text = configJson; force = true; };
     };
     configFile = configFile;
     configPath = inst.configPath;
