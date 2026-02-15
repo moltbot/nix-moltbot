@@ -7931,6 +7931,10 @@ in
               type = t.nullOr (t.str);
               default = null;
             };
+            rawKeyPrefix = lib.mkOption {
+              type = t.nullOr (t.str);
+              default = null;
+            };
           }; });
             default = null;
           };
@@ -8794,6 +8798,10 @@ in
             type = t.nullOr (t.str);
             default = null;
           };
+          rawKeyPrefix = lib.mkOption {
+            type = t.nullOr (t.str);
+            default = null;
+          };
         }; });
           default = null;
         };
@@ -9101,6 +9109,10 @@ in
               type = t.nullOr (t.str);
               default = null;
             };
+            rawKeyPrefix = lib.mkOption {
+              type = t.nullOr (t.str);
+              default = null;
+            };
           }; });
             default = null;
           };
@@ -9295,6 +9307,10 @@ in
                 default = null;
               };
               keyPrefix = lib.mkOption {
+                type = t.nullOr (t.str);
+                default = null;
+              };
+              rawKeyPrefix = lib.mkOption {
                 type = t.nullOr (t.str);
                 default = null;
               };
@@ -9494,6 +9510,10 @@ in
                 default = null;
               };
               keyPrefix = lib.mkOption {
+                type = t.nullOr (t.str);
+                default = null;
+              };
+              rawKeyPrefix = lib.mkOption {
                 type = t.nullOr (t.str);
                 default = null;
               };
@@ -9775,6 +9795,10 @@ in
                 default = null;
               };
               keyPrefix = lib.mkOption {
+                type = t.nullOr (t.str);
+                default = null;
+              };
+              rawKeyPrefix = lib.mkOption {
                 type = t.nullOr (t.str);
                 default = null;
               };
